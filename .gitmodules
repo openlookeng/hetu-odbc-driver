@@ -1,0 +1,6 @@
+[submodule "libmariadb"]
+	path = libmariadb
+	url = https://github.com/MariaDB/mariadb-connector-c.git
+[submodule "odbc_gateway"]
+	path = odbc_gateway
+	url = https://gitee.com/openlookeng/hetu-odbc-gateway.git

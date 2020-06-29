@@ -1,0 +1,14 @@
+[ODBC Data Sources]
+@TEST_DSN@ = MariaDB ODBC Connector Test
+
+[@TEST_DSN@]
+Driver      = @TEST_DRIVER@
+DESCRIPTION = MariaDB ODBC Connector Test
+SERVER      = @TEST_SERVER@
+PORT        = @TEST_PORT@
+DATABASE    = @TEST_SCHEMA@
+UID         = @TEST_UID@
+PASSWORD    = @TEST_PASSWORD@
+# To turn on connectors log(slows execution significantly)
+#OPTIONS     =4
+

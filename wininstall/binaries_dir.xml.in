@@ -1,0 +1,7 @@
+<Include>
+  <?define binaries_dir="@DRIVER_LIB_DIR@" ?>
+  <?define installer_tools_dir="@INSTALLER_TOOLS_DIR@" ?>
+  <?define additional_tools_dir="@ADDITIONAL_TOOLS_DIR@" ?>
+  <?define odbc_gateway_dir="@ODBC_GATEWAY_DIR@" ?>
+  <?define source_root_dir="@SRC_ROOT_DIR@" ?>
+</Include>
