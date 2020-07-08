@@ -263,7 +263,7 @@ SQLRETURN    MADB_DoExecute(MADB_Stmt *Stmt, BOOL ExecDirect);
 #define ONEQODBC_COLUMNS_OUTSIDESORT\
     "select table_catalog as TABLE_CAT, table_schema as TABLE_SCHEM, table_name as TABLE_NAME, "\
     "column_name as COLUMN_NAME, REAL_TYPE as DATA_TYPE, data_type as TYPE_NAME, COLUMN_SIZE, "\
-    "BUFFER_LENGTH, DECIMAL_DIGITS, NUM_PREC_RADIX, NULLABLE, comment as REMARKS, "\
+    "BUFFER_LENGTH, DECIMAL_DIGITS, NUM_PREC_RADIX, NULLABLE, NULL as REMARKS, "\
     "column_default as COLUMN_DEF, SQL_DATA_TYPE, SQL_DATETIME_SUB, CHAR_OCTET_LENGTH, "\
     "ordinal_position as ORDINAL_POSITION, is_nullable as IS_NULLABLE from (select *, "
 #define ONEQODBC_COLUMNS_CHAROCTLEN\
