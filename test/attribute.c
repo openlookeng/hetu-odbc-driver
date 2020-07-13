@@ -1045,6 +1045,192 @@ ODBC_TEST(test_param_status_array)
     return OK;
 }
 
+/* test COM_QUIT with SQLDisconnect */
+ODBC_TEST(test_com_close)
+{
+    SQLHANDLE   henv0;
+    SQLHANDLE   hdbc0;
+    SQLHANDLE   hstmt0;
+    SQLINTEGER  state;
+
+    ODBC_Connect(&henv0, &hdbc0, &hstmt0);
+
+    CHECK_DBC_RC(hdbc0, SQLGetConnectAttr(hdbc0, SQL_ATTR_CONNECTION_DEAD, (SQLPOINTER)&state, 0, NULL));
+    is_num(state, SQL_CD_FALSE); // connect is active
+    
+    FAIL_IF(SQLDisconnect(hdbc0) != SQL_SUCCESS, "close db connection error.");
+
+    FAIL_IF(SQLGetConnectAttr(hdbc0, SQL_ATTR_CONNECTION_DEAD, (SQLPOINTER)&state, 0, NULL) == SQL_SUCCESS, "connection is closed, can not get attribute.");
+    
+    FAIL_IF(SQLFreeHandle(SQL_HANDLE_DBC, hdbc0) != SQL_SUCCESS, "free db connection error.");
+    
+    FAIL_IF(SQLFreeHandle(SQL_HANDLE_ENV, henv0) != SQL_SUCCESS, "free env error.");
+
+    return OK;
+}
+
+/* test basic statement operation: alloc/reset/unbind/close/drop */
+ODBC_TEST(test_statement_operate)
+{
+#define STATEMENT_OPERATE_RECORD_NAME_LEN    20
+#define STATEMENT_OPERATE_RECORD_ARRAY_SIZE  5
+    SQLHANDLE   hstmt1;
+    SQLULEN     rowsFetchedPtr = 0;
+    SQLRETURN   rc;
+
+    typedef struct {
+        SQLINTEGER id;
+        SQLCHAR name[STATEMENT_OPERATE_RECORD_NAME_LEN + 1];
+        SQLLEN idLen;
+        SQLLEN nameLen;
+    }Record;
+    SQLULEN      rowcnt = STATEMENT_OPERATE_RECORD_ARRAY_SIZE;
+    SQLINTEGER   row_size = sizeof(Record);
+    Record       record0[STATEMENT_OPERATE_RECORD_ARRAY_SIZE];
+    Record       record[STATEMENT_OPERATE_RECORD_ARRAY_SIZE];
+    SQLULEN      paramsProcessed;
+
+    FAIL_IF(SQLAllocHandle(SQL_HANDLE_STMT, Connection, &hstmt1), "Alloc new statement error.");
+    
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_statement_operate");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_statement_operate (id INTEGER, name CHAR(20))");
+
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_PARAM_BIND_TYPE, (SQLPOINTER)sizeof(Record), 0));
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_PARAMSET_SIZE, (SQLPOINTER)rowcnt, 0));
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_PARAMS_PROCESSED_PTR, &paramsProcessed, 0));
+    for (int i = 0; i < STATEMENT_OPERATE_RECORD_ARRAY_SIZE; i++)
+    {
+        record0[i].id      = (i + 1) * 10;
+        record0[i].idLen   = sizeof(record0[i].id);
+        rc = _snprintf_s(record0[i].name, sizeof(record0[i].name), sizeof(record0[i].name) - 1, "value%d", i);
+        record0[i].nameLen = strlen(record0[i].name);
+    }
+    CHECK_STMT_RC(hstmt1, SQLBindParameter(hstmt1, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER,
+                  0, 0, &record0[0].id, sizeof(record0[0].id), &record0[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindParameter(hstmt1, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR,
+                  STATEMENT_OPERATE_RECORD_NAME_LEN, 0, record0[0].name, sizeof(record0[0].name), &record0[0].nameLen));
+
+    /* reset params, execute will fail */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_RESET_PARAMS));
+    FAIL_IF(SQLExecDirect(hstmt1, "INSERT INTO test_statement_operate (id, name) VALUES (?,?)", SQL_NTS) == SQL_SUCCESS, 
+            "expect fail, due to params has been reset by SQL_RESET_PARAMS");
+
+    /* rebind params */
+    CHECK_STMT_RC(hstmt1, SQLBindParameter(hstmt1, 1, SQL_PARAM_INPUT, SQL_C_LONG, SQL_INTEGER,
+                  0, 0, &record0[0].id, sizeof(record0[0].id), &record0[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindParameter(hstmt1, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR,
+                  STATEMENT_OPERATE_RECORD_NAME_LEN, 0, record0[0].name, sizeof(record0[0].name), &record0[0].nameLen));
+
+    /* expect execute successfully */
+    CHECK_STMT_RC(hstmt1, SQLExecDirect(hstmt1, "INSERT INTO test_statement_operate (id, name) VALUES (?,?)", SQL_NTS));
+    is_num(paramsProcessed, rowcnt);
+
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_RESET_PARAMS));
+
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_ROW_ARRAY_SIZE, (SQLPOINTER)rowcnt, 0));
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_ROW_BIND_TYPE, (SQLPOINTER)sizeof(Record), 0));
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_ROWS_FETCHED_PTR, &rowsFetchedPtr, 0));
+    
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_LONG, &record[0].id, sizeof(record[0].id), &record[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 2, SQL_C_CHAR, record[0].name, sizeof(record[0].name), &record[0].nameLen));
+
+    OK_SIMPLE_STMT(hstmt1, "SELECT * FROM test_statement_operate ORDER BY id");
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_FIRST, 0L));
+
+    /* test statement resultset unbind */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_UNBIND));
+    FAIL_IF(SQLFetchScroll(hstmt1, SQL_FETCH_NEXT, 0L) == SQL_SUCCESS, "result set has been reset, expect fetch none");
+
+    /* bind resultset again */
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_LONG, &record[0].id, sizeof(record[0].id), &record[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 2, SQL_C_CHAR, record[0].name, sizeof(record[0].name), &record[0].nameLen));
+    
+    OK_SIMPLE_STMT(hstmt1, "SELECT * FROM test_statement_operate ORDER BY id");
+    
+    CHECK_STMT_RC(hstmt1, SQLFetch(hstmt1));
+
+    /* check the result */
+    is_num(rowcnt, rowsFetchedPtr);
+    for (int i = 0; i < rowcnt; i++)
+    {
+        is_num(record[i].id, record0[i].id);
+        IS_STR(record[i].name, record0[i].name, strlen(record0[i].name));
+    }
+
+    /* normal close statment, test COM_STMT_RESET work normally */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_statement_operate");
+
+    /* normal drop statment, test COM_STMT_CLOSE work normally */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_DROP));
+
+#undef STATEMENT_OPERATE_RECORD_NAME_LEN
+#undef STATEMENT_OPERATE_RECORD_ARRAY_SIZE
+
+    return OK;
+}
+
+/* test basic function of COM_STMT_SEND_LONG_DATA */
+ODBC_TEST(test_send_long_data)
+{
+#define TEST_SEND_LONG_DATA_BUFFER_LEN    50
+    SQLHANDLE   henv1;
+    SQLHANDLE   hdbc1;
+    SQLHANDLE   hstmt1;
+
+    SQLLEN     valueLen;
+    SQLINTEGER id = 0;
+    int        rc;
+    SQLCHAR    buffer[TEST_SEND_LONG_DATA_BUFFER_LEN];
+    SQLCHAR    value[TEST_SEND_LONG_DATA_BUFFER_LEN];
+    SQLPOINTER parameter;
+    SQLPOINTER invalidPtr = (SQLPOINTER)5;
+
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_send_long_data");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_send_long_data (id INTEGER, value VARCHAR(300))");
+
+    CHECK_STMT_RC(hstmt1, SQLPrepare(hstmt1, (SQLCHAR *)"INSERT INTO test_send_long_data VALUES(?, ?)", SQL_NTS));
+
+    CHECK_STMT_RC(hstmt1,  SQLBindParameter(hstmt1, 1, SQL_PARAM_INPUT, SQL_C_LONG,
+                                            SQL_INTEGER, 0, 0, (SQLPOINTER)&id, 0, NULL));
+
+    /* bind an invalid pointer for ParameterValuePtr of SQLBindParameter */
+    CHECK_STMT_RC(hstmt1,  SQLBindParameter(hstmt1, 2, SQL_PARAM_INPUT, SQL_C_CHAR,
+                                            SQL_VARCHAR, 0, 0, invalidPtr, 0, &valueLen));
+
+    /* mark param as special length/indicator values */
+    valueLen = SQL_DATA_AT_EXEC;
+
+    id = 0;
+    EXPECT_STMT(hstmt1, SQLExecute(hstmt1), SQL_NEED_DATA);
+    EXPECT_STMT(hstmt1, SQLParamData(hstmt1, &parameter), SQL_NEED_DATA);
+    is_num(parameter, invalidPtr);
+
+    rc = _snprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1, "hello world%d", id);
+    CHECK_STMT_RC(hstmt1, SQLPutData(hstmt1, buffer, strlen(buffer))); //send long data to server
+    CHECK_STMT_RC(hstmt1, SQLParamData(hstmt1, &parameter)); //try execute, all params ready, expect SQL_SUCCESS
+
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    OK_SIMPLE_STMT(hstmt1, "SELECT * FROM test_send_long_data");
+
+    CHECK_STMT_RC(hstmt1, SQLFetch(hstmt1));
+    CHECK_STMT_RC(hstmt1, SQLGetData(hstmt1, 2, SQL_CHAR, value, sizeof(value), &valueLen));
+    is_num(valueLen, strlen(buffer));
+    IS_STR(value, buffer, strlen(buffer));
+
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_send_long_data");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+#undef TEST_SEND_LONG_DATA_BUFFER_LEN
+    return OK;
+}
+
 /*
     test cases for attributes of environment,connection and statements
      environment: odbc protocal version
@@ -1055,21 +1241,24 @@ ODBC_TEST(test_param_status_array)
 */
 MA_ODBC_TESTS my_tests[]=
 {
-    {test_attr_basic,               "test_attr_basic",                   NORMAL},
-    {test_desc_attr_apd,            "test_desc_attr_apd",                NORMAL},
-    {test_desc_attr_ard,            "test_desc_attr_ard",                NORMAL},
-    {test_desc_attr_basic,          "test_desc_attr_basic_operate",      NORMAL},
-    {test_stmt_desc_attr,           "test_attribute_apd_ipd",            NORMAL},
-    {test_stmt_desc_attr1,          "test_attribute_ard_ird",            NORMAL},
-    {test_desc_status_array,        "test_descriptor_status_array",      NORMAL},
-    {test_cursor_type,              "test_cursor_type",                  NORMAL},
-    {test_scroll_cursor,            "test_scroll_cursor",                NORMAL},
-    {test_param_bind_by_row,        "test_param_bind_by_row",            NORMAL},
-    {test_param_bind_by_col,        "test_param_bind_by_column",         NORMAL},
-    {test_param_with_ignore_set,    "test_param_with_ignore_set",        NORMAL},
-    {test_param_status_array,       "test_param_status_array",           NORMAL},
-    {test_bind_offset,              "test_param_bind_offset",            NORMAL},
-    {test_row_bind_offset,          "test_row_bind_offset_ptr",          NORMAL},
+    {test_attr_basic,               "test_attr_basic"},
+    {test_desc_attr_apd,            "test_desc_attr_apd"},
+    {test_desc_attr_ard,            "test_desc_attr_ard"},
+    {test_desc_attr_basic,          "test_desc_attr_basic_operate"},
+    {test_stmt_desc_attr,           "test_attribute_apd_ipd"},
+    {test_stmt_desc_attr1,          "test_attribute_ard_ird"},
+    {test_desc_status_array,        "test_descriptor_status_array"},
+    {test_cursor_type,              "test_cursor_type"},
+    {test_scroll_cursor,            "test_scroll_cursor"},
+    {test_param_bind_by_row,        "test_param_bind_by_row"},
+    {test_param_bind_by_col,        "test_param_bind_by_column"},
+    {test_param_with_ignore_set,    "test_param_with_ignore_set"},
+    {test_param_status_array,       "test_param_status_array"},
+    {test_bind_offset,              "test_param_bind_offset"},
+    {test_row_bind_offset,          "test_row_bind_offset_ptr"},
+    {test_com_close,                "test_com_close"},
+    {test_statement_operate,        "test_statement_operate"},
+    {test_send_long_data,           "test_send_long_data"},
     {NULL, NULL}
 };
 
