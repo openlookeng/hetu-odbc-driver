@@ -506,8 +506,8 @@ ODBC_TEST(sqltables_searchpattern_catalog_and_esacape)
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE \"my_test%tbl\" (\"col%a\" INT)");
 
     CHECK_STMT_RC(hstmt1, SQLTables(hstmt1, (SQLCHAR *)catbuff, SQL_NTS,
-        (SQLCHAR *)"my\_t_\%st", SQL_NTS,
-        (SQLCHAR *)"my\_t_st\%tbl", SQL_NTS, NULL, 0));
+        (SQLCHAR *)"my\\_t_\\%st", SQL_NTS,
+        (SQLCHAR *)"my\\_t_st\\%tbl", SQL_NTS, NULL, 0));
     CHECK_STMT_RC(hstmt1, SQLRowCount(hstmt1, &rowCount));
     is_num(my_print_non_format_result(hstmt1), 1);
 
@@ -806,9 +806,9 @@ ODBC_TEST(sqlcol_searchpattern_catalog_and_esacape)
     is_num(my_print_non_format_result(hstmt1), 1);
 
     CHECK_STMT_RC(hstmt1, SQLColumns(hstmt1, (SQLCHAR *)catbuff, SQL_NTS,
-                                   (SQLCHAR *)"my\_t_\%st", SQL_NTS,
-                                   (SQLCHAR *)"my\_t_st\%tbl", SQL_NTS,
-                                   (SQLCHAR *)"c_l\%a", SQL_NTS));
+                                   (SQLCHAR *)"my\\_t_\\%st", SQL_NTS,
+                                   (SQLCHAR *)"my\\_t_st\\%tbl", SQL_NTS,
+                                   (SQLCHAR *)"c_l\\%a", SQL_NTS));
     CHECK_STMT_RC(hstmt1, SQLRowCount(hstmt1, &rowCount));
     is_num(my_print_non_format_result(hstmt1), 1);
 
@@ -819,6 +819,37 @@ ODBC_TEST(sqlcol_searchpattern_catalog_and_esacape)
 
     return OK;
 }
+
+
+ODBC_TEST(sqlcol_catalognotexist)
+{
+    SQLHANDLE henv1;
+    SQLHANDLE hdbc1;
+    SQLHANDLE hstmt1;
+
+
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    char catbuff[128];
+    SQLLEN rowCount = 0;
+    CHECK_DBC_RC(hdbc1, SQLGetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
+        catbuff, sizeof(catbuff), NULL));
+    printf("\nDSNcatalog:%s\n", catbuff);
+
+    CHECK_STMT_RC(hstmt1, SQLColumns(hstmt1, (SQLCHAR *)"syste", SQL_NTS,
+        NULL, 0, NULL, 0, NULL, 0));
+    CHECK_STMT_RC(hstmt1, SQLRowCount(hstmt1, &rowCount));
+    is_num(my_print_non_format_result(hstmt1), 0);
+
+    CHECK_STMT_RC(hstmt1, SQLColumns(hstmt1, catbuff, SQL_NTS,
+        NULL, 0, NULL, 0, NULL, 0));
+    CHECK_STMT_RC(hstmt1, SQLRowCount(hstmt1, &rowCount));
+    FAIL_IF(rowCount < 1, "expected have results!");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+    return OK;
+}
+
 
 ODBC_TEST(gettypeinfo_colnumber)
 {
@@ -1246,6 +1277,7 @@ MA_ODBC_TESTS my_tests[]=
   { sqlcol_tablenamewithquote, "sqlcol_tablenamewithquote" },
   { sqlcols_quotes, "sqlcols_quotes" },
   { sqlcol_searchpattern_catalog_and_esacape, "sqlcol_searchpattern_catalog_and_esacape" },
+  { sqlcol_catalognotexist , "sqlcol_catalognotexist" },
   { gettypeinfo_colnumber, "gettypeinfo_colnumber" },
   { gettypeinfo_time, "gettypeinfo_time" },
   //{ gettypeinfo_wchar, "gettypeinfo_wchar" },
