@@ -8,7 +8,7 @@ This user manual contains information about the openLooKeng ODBC driver for Wind
 
 Open Database Connectivity (ODBC) is an interoperable interface protocol proposed by Microsoft for applications to access different DBMSs. It defines a universal database access mechanism and provides a set of ODBC APIs for accessing databases to simplify the interoperability between clients and different DBMSs.
 
-The ODBC driver enables applications to connect to databases. This product is the ODBC driver for openLooKeng and complies with the core level consistency specifications of ODBC 3.x.
+The ODBC driver enables applications to connect to databases. This product is the ODBC driver for openLooKeng and complies with the core level consistency specifications of ODBC 3.5.
 
 ### Prerequisites
 
@@ -39,13 +39,13 @@ The machine that the ODBC driver is installed must meet the following requiremen
 * One of the following operating systems:
   * Windows 10 (64 bit)
   * Windows Server 2016 (64 bit)
-* 100 MB of available disk space.
+* 180 MB of available disk space.
 
 ### Procedure
 
 Before installing the driver, ensure that you have the administrator rights.
 
-1. Double-click the **hetu-odbc-win64-010.msi** installation package. The welcome page is displayed. Click **Next**.
+1. Double-click the msi installation package. The welcome page is displayed. Click **Next**.
 2. The second page is the user agreement. accept the terms and click **Next**.
 3. On the third page, select an installation mode. You are advised to select **Complete**.
 4. On the fourth page, select an installation path and click **Next**.
@@ -66,19 +66,19 @@ Before an application uses the openLooKeng ODBC driver, the data source DSN must
 2. In **Control Panel**, click **System and Security**, and then click **Administrative Tools**.
 
 3. In **Administrative Tools**, click **ODBC Data Sources (64-bit)**.
- 
+
    > Note: You can also type **ODBC** in the search box of the Windows 10 **Start** menu and click **ODBC Data Sources (64-bit)** to open it.
 
 ### Adding the User DSN
 
 1. In the ODBC Data Source Administrator (64-bit), click the **User DSN** tab and click **Add**.
 
-2. In the displayed **Create New Data Source** dialog box, click **Hetu ODBC Driver** and click **Finish**.
+2. In the displayed **Create New Data Source** dialog box, click **openLooKeng  ODBC Driver** and click **Finish**.
 
-3. The Hetu ODBC Driver configuration page is displayed. On the welcome page, enter the name of the DSN to be created in the **Name** text box, enter the additional description of the DSN in the **Description** text box, and click **Next**.
+3. The openLooKeng  ODBC Driver configuration page is displayed. On the welcome page, enter the name of the DSN to be created in the **Name** text box, enter the additional description of the DSN in the **Description** text box, and click **Next**.
 
 4. The second page contains the following six text boxes. The functions and usage are as follows:
- 
+
    | Text Box| Description|
    |----------|----------|
    | Connect URL| IP address and port number of the openLooKeng server to be connected.|
@@ -90,7 +90,7 @@ Before an application uses the openLooKeng ODBC driver, the data source DSN must
 
    Set the parameters on the second page, and then click **Test DSN**. After the system displays a message indicating that the operation is successful, click **Next**.
 
-5. In the **Statement(s)** text box on page 3, enter the initial statement sent after the connection to the openLooKeng server is established. After **Debug** is selected, the driver creates a debugging log file named **MAODBC.LOG** in **C:\\Users\\***current user***\\AppData\\Local\\Temp** to record openLooKeng ODBC driver debugging information. Click **Finish**.
+5. In the **Statement(s)** text box on page 3, enter the initial statement sent after the connection to the openLooKeng server is established. After **Debug** is selected, the driver creates a debugging log file named **MAODBC.LOG** in **%TMP%** to record openLooKeng ODBC driver debugging information. Click **Finish**.
 
 ### Configuring the ODBC Connection for the DSN
 
@@ -98,7 +98,7 @@ When configuring DSN, you can set up a basic ODBC connection by providing the co
 
 ### Connection Configuration File
 
-When connection parameters are transferred through the connection configuration file, all connection parameters defined by openLooKeng JDBC can be configured. For details, see [Parameter Reference#](https://openLooKeng.io/docs/current/installation/jdbc.html#parameter-reference) of openLooKeng JDBC Driver.
+When connection parameters are transferred through the connection configuration file, all connection parameters defined by openLooKeng JDBC can be configured. For details, see [Parameter Reference#](https://openLooKeng.io/docs/docs/installation/jdbc.html#parameter-reference) of openLooKeng JDBC Driver.
 
 The connection configuration file must provide a group of parameter key-value pairs separated by lines, such as **user=root** or **SSL=true**. The driver automatically parses the parameter key values and configures the connection. The following is an example:
 
