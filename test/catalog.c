@@ -485,7 +485,7 @@ ODBC_TEST(sqltables_searchpattern_catalog_and_esacape)
     SQLLEN rowCount = 0;
     CHECK_DBC_RC(hdbc1, SQLGetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
         catbuff, sizeof(catbuff), NULL));
-    printf("\nDSNcatalog:%s\n", catbuff);
+    diag("DSNcatalog:%s", catbuff);
 
     CHECK_STMT_RC(hstmt1, SQLTables(hstmt1, (SQLCHAR *)"sy_tem", SQL_NTS,
                                         (SQLCHAR *)"information\\_schema", SQL_NTS, 
@@ -789,7 +789,7 @@ ODBC_TEST(sqlcol_searchpattern_catalog_and_esacape)
     SQLLEN rowCount = 0;
     CHECK_DBC_RC(hdbc1, SQLGetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
         catbuff, sizeof(catbuff), NULL));
-    printf("\nDSNcatalog:%s\n", catbuff);
+    diag("DSNcatalog:%s", catbuff);
 
 
     OK_SIMPLE_STMT(hstmt1, "DROP SCHEMA IF EXISTS \"my_te%st\"");
@@ -833,7 +833,7 @@ ODBC_TEST(sqlcol_catalognotexist)
     SQLLEN rowCount = 0;
     CHECK_DBC_RC(hdbc1, SQLGetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
         catbuff, sizeof(catbuff), NULL));
-    printf("\nDSNcatalog:%s\n", catbuff);
+    diag("DSNcatalog:%s", catbuff);
 
     CHECK_STMT_RC(hstmt1, SQLColumns(hstmt1, (SQLCHAR *)"syste", SQL_NTS,
         NULL, 0, NULL, 0, NULL, 0));
