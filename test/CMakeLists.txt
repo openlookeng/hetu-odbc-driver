@@ -18,7 +18,7 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 ENABLE_TESTING()
 
 SET (ODBC_TESTS
-     "catalog1" "datatypes" "attribute" "conformancelevel" "datahandle" "sqlgrammar" "trans" "blockcursor" "changecatalog" "sqlstatements")
+     "catalog" "datatypes" "attribute" "conformancelevel" "datahandle" "sqlgrammar" "trans" "blockcursor" "changecatalog" "sqlstatements")
 
 # Interactive makes sense on WIN32 only atm
 IF (WIN32 AND (BUILD_INTERACTIVE_TESTS OR USE_INTERACTIVE_TESTS))

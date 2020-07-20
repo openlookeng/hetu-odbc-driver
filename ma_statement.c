@@ -20,6 +20,7 @@
 #include <ma_odbc.h>
 
 #define MADB_MIN_QUERY_LEN 5
+#define CATALOGS_MAXLEN 1024*100
 
 struct st_ma_stmt_methods MADB_StmtMethods; /* declared at the end of file */
 
@@ -3359,7 +3360,7 @@ SQLRETURN ONEQ_AllCatalogs(MADB_Stmt *Stmt, char *CatalogNames, int CatNamesLen)
     SQLHSTMT  hstmt = SQL_NULL_HSTMT;  // Statement handle
     SQLRETURN retcode;
 
-    SQLCHAR Tabcatalog_buf[256];
+    SQLCHAR Tabcatalog_buff[256];
     SQLLEN lenCatalogName = 0;
 
     retcode = MA_SQLAllocHandle(SQL_HANDLE_STMT, Stmt->Connection, (SQLHANDLE *)&hstmt);
@@ -3373,22 +3374,17 @@ SQLRETURN ONEQ_AllCatalogs(MADB_Stmt *Stmt, char *CatalogNames, int CatNamesLen)
     if ( SQL_SUCCESS != retcode )
         return retcode;
 
-    retcode = SQLBindCol(hstmt, 1, SQL_C_CHAR, &Tabcatalog_buf, 256,
+    retcode = SQLBindCol(hstmt, 1, SQL_C_CHAR, &Tabcatalog_buff, 256,
         (SQLPOINTER)&lenCatalogName);
     if ( SQL_SUCCESS != retcode )
         return retcode;
 
-    //Init First, Or strcat_s will crash!!!
-    for (int i = 0; i < CatNamesLen; i++)
-    {
-        CatalogNames[i] = '\0';
-    }
-
+    //CatalogNames Init First, Or strcat_s will crash!!!
     // Fetch the resultset till NO_DATA is returned
     for (int i = 0; ; i++) {
         retcode = SQLFetch(hstmt);
         if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
-            if (strcat_s(CatalogNames, CatNamesLen, Tabcatalog_buf) != 0) {
+            if (strcat_s(CatalogNames, CatNamesLen, Tabcatalog_buff) != 0) {
                 return SQL_ERROR;
             }
 
@@ -3485,12 +3481,21 @@ SQLRETURN MADB_StmtTables(MADB_Stmt *Stmt, char *CatalogName, SQLSMALLINT Catalo
     {
         SQLCHAR* Tabtemp = NULL;
         char *Tabptr = NULL;
-        SQLCHAR  TabCatalogNames[100000];
-        int CatNamesLen = sizeof(TabCatalogNames) / sizeof(TabCatalogNames[0]);
+        SQLCHAR*  TabCatalogNames;
+        TabCatalogNames = (SQLCHAR*)calloc(CATALOGS_MAXLEN, sizeof(SQLCHAR));
+        if (NULL == TabCatalogNames)
+        {
+            MADB_SetError(&Stmt->Error, MADB_ERR_HY001, "Can't alloc enough mem for catalongnames", 0);
+            return Stmt->Error.ReturnValue;
+        }
 
-        ret = ONEQ_AllCatalogs(Stmt, TabCatalogNames, CatNamesLen);
-        if( ret != SQL_SUCCESS )
+        ret = ONEQ_AllCatalogs(Stmt, TabCatalogNames, CATALOGS_MAXLEN);
+        if (ret != SQL_SUCCESS)
+        {
+            free(TabCatalogNames);
             return ret;
+        }
+
 
         Tabptr = strtok_s(TabCatalogNames, ";", &Tabtemp);
 
@@ -3512,6 +3517,7 @@ SQLRETURN MADB_StmtTables(MADB_Stmt *Stmt, char *CatalogName, SQLSMALLINT Catalo
 
                 MADB_DynstrAppend(&StmtStr, ")");
 
+                free(TabCatalogNames);
                 goto RETEXEC;
     }
     /* SQL_ALL_TABLE_TYPES
@@ -3560,13 +3566,21 @@ SQLRETURN MADB_StmtTables(MADB_Stmt *Stmt, char *CatalogName, SQLSMALLINT Catalo
             {
                 SQLCHAR* Tabtemp = NULL;
                 char *Tabptr = NULL;
-                SQLCHAR  TabCatalogNames[100000];
-                int CatNamesLen = sizeof(TabCatalogNames) / sizeof(TabCatalogNames[0]);
+                SQLCHAR*  TabCatalogNames;
+                TabCatalogNames = (SQLCHAR*)calloc(CATALOGS_MAXLEN, sizeof(SQLCHAR));
+                if (NULL == TabCatalogNames)
+                {
+                    MADB_SetError(&Stmt->Error, MADB_ERR_HY001, "Can't alloc enough mem for catalongnames", 0);
+                    return Stmt->Error.ReturnValue;
+                }
 
-                ret = ONEQ_AllCatalogs(Stmt, TabCatalogNames, CatNamesLen);
-                if ( ret != SQL_SUCCESS )
+                ret = ONEQ_AllCatalogs(Stmt, TabCatalogNames, CATALOGS_MAXLEN);
+                if (ret != SQL_SUCCESS)
+                {
+                    free(TabCatalogNames);
                     return ret;
-
+                }
+                    
                 Tabptr = strtok_s(TabCatalogNames, ";", &Tabtemp);
 
                 //Only In this case the max size of the InitDynaStr needs to be this large, in other case 8192 is just fine.
@@ -3598,6 +3612,8 @@ SQLRETURN MADB_StmtTables(MADB_Stmt *Stmt, char *CatalogName, SQLSMALLINT Catalo
                 MADB_DynstrAppend(&StmtStr, Quote);
                 MADB_DynstrAppend(&StmtStr, Escapechar);
                 MADB_DynstrAppend(&StmtStr, Quote);
+
+                free(TabCatalogNames);
             }
         }
         else if (Stmt->Connection->CatalogName)
@@ -3743,6 +3759,7 @@ static MADB_ShortTypeInfo SqlStatsColType[13]=
                                /*9*/     {SQL_VARCHAR, 0, SQL_NULLABLE, 0}, {SQL_CHAR, 0, SQL_NULLABLE, 2}, {SQL_INTEGER, 0, SQL_NULLABLE, 0}, {SQL_INTEGER, 0, SQL_NULLABLE, 0},
                                /*13*/    {SQL_VARCHAR, 0, SQL_NULLABLE, 0}};
 
+
 /* {{{ MADB_StmtStatistics */
 SQLRETURN MADB_StmtStatistics(MADB_Stmt *Stmt, char *CatalogName, SQLSMALLINT NameLength1,
                               char *SchemaName, SQLSMALLINT NameLength2,
@@ -3812,8 +3829,43 @@ SQLRETURN MADB_StmtColumns(MADB_Stmt *Stmt,
       goto RETEXEC;
   } else if (CatalogName)
   {
-      int CatlogNameIsEmptyStr = !strcmp(CatalogName, "");
-      if (CatlogNameIsEmptyStr)
+      int CatalogNameIsEmptyStr = !strcmp(CatalogName, "");
+      my_bool CatalogNotExist = 0;
+      SQLCHAR catalog_buff[64] = {'\0'};
+      SQLCHAR*  AllCatalogNames;
+      AllCatalogNames = (SQLCHAR*)calloc(CATALOGS_MAXLEN, sizeof(SQLCHAR));
+      if (NULL == AllCatalogNames)
+      {
+          MADB_SetError(&Stmt->Error, MADB_ERR_HY001, "Can't alloc enough mem for catalongnames", 0);
+          return Stmt->Error.ReturnValue;
+      }
+
+      int cataloglen = sizeof(catalog_buff) / sizeof(catalog_buff[0]);
+
+      if (strcat_s(catalog_buff, cataloglen, CatalogName) != 0) {
+          free(AllCatalogNames);
+          return SQL_ERROR;
+      }
+      if (strcat_s(catalog_buff, cataloglen, ";") != 0) {
+          free(AllCatalogNames);
+          return SQL_ERROR;
+      }
+
+      ret = ONEQ_AllCatalogs(Stmt, AllCatalogNames, CATALOGS_MAXLEN);
+      if (ret != SQL_SUCCESS)
+      {
+          free(AllCatalogNames);
+          return ret;
+      }
+          
+      if (!strstr(AllCatalogNames, catalog_buff)) 
+      { 
+          CatalogNotExist = 1;
+      }
+
+      free(AllCatalogNames);
+
+      if (CatalogNameIsEmptyStr || CatalogNotExist)
       {
           //using this to generate a null resultset
           MADB_InitDynamicString(&StmtStr, ONEQODBC_COLUMNS_EMPTY, 8192, 1024);
