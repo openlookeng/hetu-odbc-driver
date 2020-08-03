@@ -21,7 +21,7 @@ SET (ODBC_TESTS
      "catalog" "datatypes" "attribute"
      "conformancelevel" "datahandle" "sqlgrammar"
      "trans" "blockcursor" "changecatalog"
-     "sqlstatements" "connstr")
+     "sqlstatements" "connstr" "unicode")
 
 # Interactive makes sense on WIN32 only atm
 IF (WIN32 AND (BUILD_INTERACTIVE_TESTS OR USE_INTERACTIVE_TESTS))

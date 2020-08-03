@@ -3943,7 +3943,7 @@ SQLRETURN MADB_StmtColumns(MADB_Stmt *Stmt,
         MADB_DynstrAppend(&StmtStr, " ESCAPE '\\' "))
     goto dynerror;
 
-  if (MADB_DynstrAppend(&StmtStr, " ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION))))"))
+  if (MADB_DynstrAppend(&StmtStr, ")))) ORDER BY TABLE_CAT, TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"))
     goto dynerror;
 
   RETEXEC:

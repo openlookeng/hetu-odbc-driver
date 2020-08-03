@@ -33,6 +33,7 @@ void ma_debug_print(my_bool ident, char *format, ...)
     vfprintf(fp, format, va);
     fprintf(fp, "\n");
     va_end(va);
+    fflush(fp);
     fclose(fp);
   }
 }

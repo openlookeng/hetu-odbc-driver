@@ -95,7 +95,7 @@ ODBC驱动为应用提供了连接到数据库的能力，本产品为openLooKen
 
    完成第2页各输入框的填写并单击"Test DSN"按钮显示成功信息后，单击"Next"按钮
 
-5. 第3页Statement(s)输入框中可以输入在建立到openLooKeng服务器的连接后发送的初始语句，勾选Debug后驱动会在%TMP%路径下创建名为MAODBC.LOG的调试日志文件，记录openLooKeng ODBC Driver的调试信息。最后在本页单击"Finishi"按钮完成DSN的配置与添加。
+5. 第3页Statement(s)输入框中可以输入在建立到openLooKeng服务器的连接后发送的初始语句，勾选Debug后驱动会在%TMP%路径下创建名为MAODBC.LOG的调试日志文件，记录openLooKeng ODBC Driver的调试信息，在第二页单击Test DSN成功后可以从CharacterSet下拉框中选择需要配置的连接字符集。最后在本页单击"Finishi"按钮完成DSN的配置与添加。
 
 ### DSN配置ODBC连接
 
@@ -169,3 +169,11 @@ KerberosKeytabPath=F:/openLooKeng/user.keytab
 |`INTERVAL DAY TO SECOND`|  `SQL_VARCHAR`         |
 
 数据类型的详细信息用户可以通过调用Catalog Functions中的SQLGetTypInfo获得
+
+## 字符集
+
+本驱动同时支持ANSI与Unicode应用，默认的连接字符集对于ANSI应用为系统默认字符集，对于Unicode应用为utf8编码。如果应用使用的字符集与上述默认字符集不同可能会出现乱码，对此用户应该指定连接字符集使之与应用所需的字符集相适应。下面对连接字符集的相应配置进行说明。
+
+在调用ODBC API获取数据时，若绑定到SQL_C_WCHAR类型的缓冲区，无论对ANSI还是Unicode应用驱动都会返回Unicode编码的结果，而绑定到SQL_C_CHAR类型的缓冲区时在默认情况下驱动会对ANSI应用返回按系统默认字符集编码的结果，对Unicode应用会返回按utf8编码的结果。若应用采用的编码与默认不符，可能会造成结果乱码，为此用户应通过配置连接字符集以指定结果的编码。例如若应用出现中文乱码的情况，可以尝试将连接字符集配置为GBK或者GB2312。
+
+当前本驱动所支持的所有连接字符集都可以在配置数据源的UI界面第三页中的CharacterSet下拉框中进行设置，用户可以在Test DSN成功后跟据自身需求从下拉框中选择连接字符集。

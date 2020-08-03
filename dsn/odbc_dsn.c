@@ -78,6 +78,7 @@ MADB_DsnMap DsnMap[] = {
   {&DsnKeys[8],  1, txtUserName,         64, 0},
   {&DsnKeys[9],  1, txtPassword,         64, 0},
   {&DsnKeys[10], 1, cbDatabase,           0, 0},
+  {&DsnKeys[16], 2, cbCharset,           0, 0},
   {&DsnKeys[41], 1, cbSchema,            0, 0 },
   {&DsnKeys[42], 1, txtConnectCfg,       0, 0},
   {&DsnKeys[43], 1, txtConnectUrl,     2083, 0 },
@@ -431,10 +432,42 @@ end:
 	  SQLFreeHandle(SQL_HANDLE_STMT, (SQLHANDLE)Stmt);
 }
 
+typedef struct gateway_charset
+{
+    unsigned int nr;
+    const char*  csname;
+} GW_CHARSET;
+
+const GW_CHARSET gw_charsets[] =
+{
+    { 1, "big5" },
+    { 4, "cp850" },
+    { 7, "koi8r" },
+    { 8, "latin1" },
+    { 11, "ascii" },
+    { 13, "sjis" },
+    { 16, "hebrew" },
+    { 18, "tis620" },
+    { 22, "koi8u" },
+    { 24, "gb2312" },
+    { 25, "greek" },
+    { 26, "cp1250" },
+    { 28, "gbk" },
+    { 30, "latin5" },
+    { 33, "utf8" },
+    { 36, "cp866" },
+    { 40, "cp852" },
+    { 45, "utf8mb4" },
+    { 51, "cp1251" },
+    { 57, "cp1256" },
+    { 59, "cp1257" },
+    { 95, "cp932" },
+
+    { NULL, NULL },
+};
+
 void DSN_Set_CharacterSets(SQLHANDLE Connection)
 {
-  MADB_Stmt *Stmt= NULL;
-  SQLRETURN ret= SQL_ERROR;
   char Charset[65];
   MADB_Dsn *Dsn= (MADB_Dsn *)GetWindowLongPtr(GetParent(hwndTab[0]), DWLP_USER);
 
@@ -443,23 +476,14 @@ void DSN_Set_CharacterSets(SQLHANDLE Connection)
 
   GetDialogFields();
   
-  if (SQLAllocHandle(SQL_HANDLE_STMT, Connection, (SQLHANDLE *)&Stmt) != SQL_SUCCESS)
-    goto end;
-
-  if (SQLExecDirect((SQLHSTMT)Stmt, 
-                    (SQLCHAR *)"select character_set_name from information_schema.collations "
-                               "WHERE character_set_name NOT LIKE 'utf16%' AND "
-                               "character_set_name NOT LIKE 'utf32%' AND "
-                               "character_set_name NOT LIKE 'ucs2' "
-                               "group by character_set_name order by character_set_name"
-                               , SQL_NTS) != SQL_SUCCESS)
-    goto end;
-
-  SQLBindCol(Stmt, 1, SQL_C_CHAR, Charset, 65, 0);
   ComboBox_ResetContent(GetDlgItem(hwndTab[2], cbCharset));
   
-  while (SQLFetch(Stmt) == SQL_SUCCESS)
-    ComboBox_InsertString(GetDlgItem(hwndTab[2], cbCharset), -1, Charset);
+  for (int i = 0; gw_charsets[i].csname; i++)
+  {
+      strcpy_s(Charset, sizeof(Charset) - 1, gw_charsets[i].csname);
+      ComboBox_InsertString(GetDlgItem(hwndTab[2], cbCharset), -1, Charset);
+  }
+    
   if (Dsn->CharacterSet)
   {
     int Idx= ComboBox_FindString(GetDlgItem(hwndTab[2], cbCharset), 0, Dsn->CharacterSet);
@@ -467,10 +491,6 @@ void DSN_Set_CharacterSets(SQLHANDLE Connection)
   }
   ComboBox_SetMinVisible(GetDlgItem(hwndTab[2], cbCharset),5);
   CSFilled= TRUE;
-
-end:
-  if (Stmt)
-	  SQLFreeHandle(SQL_HANDLE_STMT, (SQLHANDLE)Stmt);
 }
 
 

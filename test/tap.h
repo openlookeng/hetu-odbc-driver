@@ -785,10 +785,15 @@ SQLHANDLE DoConnect(SQLHANDLE Connection, BOOL DoWConnect,
   SQLSMALLINT Length;
 
   /* my_options |= 4; */ /* To enable debug */
-  if (UseDsnOnly != FALSE)
+  if (UseDsnOnly != FALSE && add_parameters == NULL)
   {
     _snprintf(DSNString, 1024, "DSN=%s", dsn ? dsn : (const char*)my_dsn);
     diag(DSNString);
+  }
+  else if (UseDsnOnly != FALSE && add_parameters)
+  {
+      _snprintf(DSNString, 1024, "DSN=%s;%s", dsn ? dsn : (const char*)my_dsn, add_parameters);
+      diag(DSNString);
   }
   else
   {
@@ -872,13 +877,22 @@ void ODBC_Disconnect(SQLHANDLE Env, SQLHANDLE Connection, SQLHANDLE Stmt)
 }
 
 
-SQLHANDLE ConnectWithCharset(SQLHANDLE *conn, const char *charset_name, const char *add_parameters)
+SQLHANDLE ConnectWithCharsetA(SQLHANDLE *conn, const char *charset_name, const char *add_parameters)
 {
   char charset_clause[64];
 
   _snprintf(charset_clause, sizeof(charset_clause), "CHARSET=%s;%s", charset_name, add_parameters ? add_parameters : "");
 
   return DoConnect(*conn, FALSE, NULL, NULL, NULL, 0, NULL, NULL, NULL, charset_clause);
+}
+
+SQLHANDLE ConnectWithCharsetW(SQLHANDLE* conn, const char* charset_name, const char* add_parameters)
+{
+    char charset_clause[64];
+
+    _snprintf(charset_clause, sizeof(charset_clause), "CHARSET=%s;%s", charset_name, add_parameters ? add_parameters : "");
+
+    return DoConnect(*conn, TRUE, NULL, NULL, NULL, 0, NULL, NULL, NULL, charset_clause);
 }
 
 

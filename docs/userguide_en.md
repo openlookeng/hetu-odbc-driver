@@ -90,7 +90,7 @@ Before an application uses the openLooKeng ODBC driver, the data source DSN must
 
    Set the parameters on the second page, and then click **Test DSN**. After the system displays a message indicating that the operation is successful, click **Next**.
 
-5. In the **Statement(s)** text box on page 3, enter the initial statement sent after the connection to the openLooKeng server is established. After **Debug** is selected, the driver creates a debugging log file named **MAODBC.LOG** in **%TMP%** to record openLooKeng ODBC driver debugging information. Click **Finish**.
+5. In the **Statement(s)** text box on page 3, enter the initial statement sent after the connection to the openLooKeng server is established. After **Debug** is selected, the driver creates a debugging log file named **MAODBC.LOG** in **%TMP%** to record openLooKeng ODBC driver debugging information. After you click Test DSN on page 2, user can configure the connection character set from the CharacterSet drop-down box. Click **Finish**.
 
 ### Configuring the ODBC Connection for the DSN
 
@@ -162,3 +162,11 @@ The following table lists the data types supported by the driver, ODBC data type
 | `INTERVAL DAY TO SECOND`| `SQL_VARCHAR`|
 
 You can obtain the details about data types by calling **SQLGetTypInfo** in **Catalog Functions**.
+
+## CharacterSet
+
+The openLooKeng ODBC driver supports **both ANSI and Unicode** applications. The default connection character set is the system default character set for ANSI applications and utf8 for Unicode applications. If the character set used by the application is different from the above-mentioned character set,  it may cause garbled characters. For this, the user should specify the connection character set to adapt to the character set required by the application. The corresponding configuration of the connection character set is described as follows.
+
+When calling the ODBC API to retrieve data, if bound to the SQL_C_WCHAR C data type buffer, the driver will return the Unicode encoded result for both ANSI and Unicode applications. When bound to the SQL_C_CHAR C data type buffer, by deafult, the driver will return to the ANSI application the result  encoded in system default character set, and for Unicode application the driver will return the result encoded in utf8. If the encoding character set used by the application does not match the default, the result may be garbled. To this end, the user should configure the connection character set to specify the encoding of the result. For example, if the application has garbled Chinese characters, you can try to configure the connection character set to GBK or GB2312.
+
+While configuring data source all connection character sets supported by the openLooKeng ODBC driver can be set in the **CharacterSet** drop-down box on the page 3 of the User interface. User can select the connection character from the drop-down box after the **Test DSN** is success.
