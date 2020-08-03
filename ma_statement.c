@@ -24,6 +24,8 @@
 
 struct st_ma_stmt_methods MADB_StmtMethods; /* declared at the end of file */
 
+extern SQLRETURN MADB_StoreQueryResult(MADB_Stmt *Stmt, MYSQL_RES *resultSet);
+
 /* {{{ MADB_StmtInit */
 SQLRETURN MADB_StmtInit(MADB_Dbc *Connection, SQLHANDLE *pHStmt)
 {
@@ -89,6 +91,7 @@ error:
 SQLRETURN MADB_ExecuteQuery(MADB_Stmt * Stmt, char *StatementText, SQLINTEGER TextLength)
 {
   SQLRETURN ret= SQL_ERROR;
+  MYSQL_RES *resultSet = NULL;
   
   LOCK_MARIADB(Stmt->Connection);
   if (StatementText)
@@ -98,6 +101,15 @@ SQLRETURN MADB_ExecuteQuery(MADB_Stmt * Stmt, char *StatementText, SQLINTEGER Te
     {
       ret= SQL_SUCCESS;
       MADB_CLEAR_ERROR(&Stmt->Error);
+      if (Stmt->Connection->mariadb->field_count > 0) {
+        resultSet = mysql_store_result(Stmt->stmt->mysql);
+
+        if (resultSet != NULL) {
+            // MADB_SetError will be call to set error info in MADB_StoreQueryResult
+            ret = MADB_StoreQueryResult(Stmt, resultSet);
+            mysql_free_result(resultSet);
+        }
+      }
 
       Stmt->AffectedRows= mysql_affected_rows(Stmt->Connection->mariadb);
     }

@@ -31,13 +31,14 @@ enum enum_madb_query_type { MADB_QUERY_NO_RESULT= 0, /* Default type for the que
                             MADB_QUERY_CREATE_DEFINER,
                             MADB_QUERY_SET,
                             MADB_QUERY_SET_NAMES,
+                            MADB_QUERY_PREPARE,
+                            MADB_QUERY_EXECUTE,
                             MADB_QUERY_ANALYZE,
                             MADB_QUERY_SELECT,
                             MADB_QUERY_SHOW,
                             MADB_QUERY_CALL,
                             MADB_QUERY_EXPLAIN,
                             MADB_QUERY_CHECK,
-                            MADB_QUERY_EXECUTE,
                             MADB_QUERY_DESCRIBE,
                             MADB_NOT_ATOMIC_BLOCK
 };
