@@ -54,7 +54,8 @@ SET (MARIADB_ODBC_SOURCES odbc_3_api.c
                           ma_server.c
                           ma_legacy_helpers.c
                           ma_typeconv.c
-                          ma_bulk.c)
+                          ma_bulk.c
+                          ma_save_query_result.c)
 
 SET(DSN_DIALOG_FILES ${CMAKE_SOURCE_DIR}/dsn/odbc_dsn.c
                      ${CMAKE_SOURCE_DIR}/dsn/odbc_dsn.rc

@@ -337,6 +337,10 @@ enum enum_madb_query_type MADB_GetQueryType(const char *Token1, const char *Toke
   {
     return MADB_QUERY_DESCRIBE;
   }
+  if (_strnicmp(Token1, "PREPARE", strlen("PREPARE")) == 0)
+  {
+    return MADB_QUERY_PREPARE;
+  }
   if (_strnicmp(Token1, "BEGIN", 5) == 0 && _strnicmp(Token2, "NOT", 3) == 0)
   {
     return MADB_NOT_ATOMIC_BLOCK;
@@ -462,9 +466,11 @@ int ParseQuery(MADB_QUERY *Query)
       }
       case '?': /* This can break token(w/out space char), and be beginning of a token.
                    Thus we need it in both places */
-        Query->HasParameters= 1;
-        /* Parameter placeholder is a complete token. And next one may begin right after it*/
-        ReadingToken= FALSE;
+        if (Query->QueryType != MADB_QUERY_PREPARE) {
+            Query->HasParameters= 1;
+            /* Parameter placeholder is a complete token. And next one may begin right after it*/
+            ReadingToken= FALSE;
+        }
         break;
       case ';':
         if (QueryIsPossiblyMultistmt(Query))
