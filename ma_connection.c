@@ -105,7 +105,7 @@ SQLUSMALLINT MADB_supported_api[]=
   SQL_API_SQLPRIMARYKEYS,
   SQL_API_SQLPROCEDURECOLUMNS,
   SQL_API_SQLPROCEDURES,
-//  SQL_API_SQLSETPOS,
+  SQL_API_SQLSETPOS,
   SQL_API_SQLSETSCROLLOPTIONS,
   SQL_API_SQLTABLES,
   SQL_API_SQLTABLEPRIVILEGES
@@ -1339,28 +1339,10 @@ SQLRETURN MADB_DbcGetInfo(MADB_Dbc *Dbc, SQLUSMALLINT InfoType, SQLPOINTER InfoV
     MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_DV_DROP_VIEW, StringLengthPtr);
     break;
   case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
-    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA1_ABSOLUTE |
-                                                SQL_CA1_BULK_ADD |
-                                                SQL_CA1_LOCK_NO_CHANGE |
-                                                SQL_CA1_NEXT |
-                                                SQL_CA1_POSITIONED_DELETE |
-                                                SQL_CA1_POSITIONED_UPDATE |
-                                                SQL_CA1_POS_DELETE |
-                                                SQL_CA1_POS_POSITION |
-                                                SQL_CA1_POS_REFRESH |
-                                                SQL_CA1_POS_UPDATE |
-                                                SQL_CA1_RELATIVE, StringLengthPtr);
+    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, 0, StringLengthPtr);
     break;
   case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
-    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA2_CRC_EXACT | 
-                                                SQL_CA2_MAX_ROWS_DELETE |
-                                                SQL_CA2_MAX_ROWS_INSERT |
-                                                SQL_CA2_MAX_ROWS_SELECT |
-                                                SQL_CA2_MAX_ROWS_UPDATE |
-                                                SQL_CA2_SENSITIVITY_ADDITIONS |
-                                                SQL_CA2_SENSITIVITY_DELETIONS |
-                                                SQL_CA2_SENSITIVITY_UPDATES |
-                                                SQL_CA2_SIMULATE_TRY_UNIQUE, StringLengthPtr);
+    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, 0, StringLengthPtr);
     break;
   case SQL_EXPRESSIONS_IN_ORDERBY:
     SLen= (SQLSMALLINT)MADB_SetString(isWChar ? &Dbc->Charset : NULL, (void *)InfoValuePtr, BUFFER_CHAR_LEN(BufferLength, isWChar), 
@@ -1371,15 +1353,9 @@ SQLRETURN MADB_DbcGetInfo(MADB_Dbc *Dbc, SQLUSMALLINT InfoType, SQLPOINTER InfoV
     break;
   case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1:
     MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA1_ABSOLUTE |
-                                                SQL_CA1_BULK_ADD |
                                                 SQL_CA1_LOCK_NO_CHANGE |
                                                 SQL_CA1_NEXT |
-                                                SQL_CA1_POSITIONED_DELETE |
-                                                SQL_CA1_POSITIONED_UPDATE |
-                                                SQL_CA1_POS_DELETE |
                                                 SQL_CA1_POS_POSITION |
-                                                SQL_CA1_POS_REFRESH |
-                                                SQL_CA1_POS_UPDATE |
                                                 SQL_CA1_RELATIVE, StringLengthPtr);
     break;
   case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2:
@@ -1691,12 +1667,17 @@ SQLRETURN MADB_DbcGetInfo(MADB_Dbc *Dbc, SQLUSMALLINT InfoType, SQLPOINTER InfoV
     MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_SCC_ISO92_CLI, StringLengthPtr);
     break;
   case SQL_STATIC_CURSOR_ATTRIBUTES1:
-    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA1_ABSOLUTE | /* SQL_CA1_BOOKMARK | */
-                                                SQL_CA1_NEXT | SQL_CA1_RELATIVE,
-                     StringLengthPtr);
+    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA1_ABSOLUTE |  SQL_CA1_BOOKMARK |
+                                                SQL_CA1_NEXT | SQL_CA1_RELATIVE|
+                                                SQL_CA1_LOCK_NO_CHANGE | SQL_CA1_POS_POSITION, StringLengthPtr);
     break;
+
   case SQL_STATIC_CURSOR_ATTRIBUTES2:
-    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA2_MAX_ROWS_SELECT, StringLengthPtr);
+    MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_CA2_CRC_EXACT |
+                                                SQL_CA2_MAX_ROWS_DELETE |
+                                                SQL_CA2_MAX_ROWS_INSERT |
+                                                SQL_CA2_MAX_ROWS_SELECT |
+                                                SQL_CA2_MAX_ROWS_UPDATE, StringLengthPtr);
     break;
   case SQL_STRING_FUNCTIONS:
     MADB_SET_NUM_VAL(SQLUINTEGER, InfoValuePtr, SQL_FN_STR_ASCII | SQL_FN_STR_CHAR | SQL_FN_STR_CONCAT |
@@ -1767,11 +1748,10 @@ SQLRETURN MADB_DbcGetInfo(MADB_Dbc *Dbc, SQLUSMALLINT InfoType, SQLPOINTER InfoV
     break;
   /* 2.0 types */
   case SQL_POS_OPERATIONS:
-    MADB_SET_NUM_VAL(SQLINTEGER, InfoValuePtr, SQL_POS_POSITION | SQL_POS_REFRESH | SQL_POS_UPDATE | SQL_POS_DELETE | SQL_POS_ADD,
-                     StringLengthPtr);
+    MADB_SET_NUM_VAL(SQLINTEGER, InfoValuePtr, SQL_POS_POSITION, StringLengthPtr);
     break;
   case SQL_STATIC_SENSITIVITY:
-    MADB_SET_NUM_VAL(SQLINTEGER, InfoValuePtr, SQL_SS_DELETIONS | SQL_SS_UPDATES, StringLengthPtr);
+    MADB_SET_NUM_VAL(SQLINTEGER, InfoValuePtr, 0, StringLengthPtr);
     break;
   case SQL_LOCK_TYPES:
     MADB_SET_NUM_VAL(SQLINTEGER, InfoValuePtr, SQL_LCK_NO_CHANGE, StringLengthPtr);
