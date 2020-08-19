@@ -67,13 +67,13 @@ ODBC_TEST(test_SQLGetTypeInfo_API)
    SQLLEN  dataTypeRows;
    SQLCHAR params[64];
 
-   //check  all 16 kinds  datatype
+   //check  all 20 kinds  datatype
    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_ALL_TYPES));
    CHECK_STMT_RC(Stmt, SQLNumResultCols(Stmt, &dataTypeCols));
    CHECK_STMT_RC(Stmt, SQLRowCount(Stmt, &dataTypeRows));
 
    is_num(dataTypeCols, 19);
-   is_num(dataTypeRows, 16);
+   is_num(dataTypeRows, 20);
    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
    
    //check  boolean data type

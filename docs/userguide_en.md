@@ -160,6 +160,10 @@ The following table lists the data types supported by the driver, ODBC data type
 | `TIMESTAMP`| `SQL_TYPE_TIMESTAMP`|
 | `INTERVAL YEAR TO MONTH`| `SQL_VARCHAR`|
 | `INTERVAL DAY TO SECOND`| `SQL_VARCHAR`|
+| `ARRAY` | `SQL_VARCHAR` |
+| `MAP` | `SQL_VARCHAR` |
+| `ROW` | `SQL_VARCHAR` |
+| `JSON` | `SQL_VARCHAR` |
 
 You can obtain the details about data types by calling **SQLGetTypInfo** in **Catalog Functions**.
 

@@ -308,13 +308,13 @@ SQLRETURN    MADB_DoExecute(MADB_Stmt *Stmt, BOOL ExecDirect);
     "when 'integer' then 4  when 'real' then 7 when 'varchar' then 12 "\
     "when 'char' then 1  when 'varbinary' then -3  when 'date' then 91 "\
     "when 'time' then 92  when 'timestamp' then 93  when 'interval year to month' then 12 "\
-    "when 'interval day to second' then 12 else -9999 end as REAL_TYPE from (select *, "
+    "when 'interval day to second' then 12 when 'array' then 12 when 'map' then 12 "\
+    "when 'row' then 12 when 'json' then 12 else -9999 end as REAL_TYPE from (select *, "
 #define ONEQODBC_COLUMNS_COLUMNTYPE\
     "if(DATA_TYPE like '%(%)%', "\
-    "CONCAT(SUBSTRING(DATA_TYPE,1, POSITION('(' IN DATA_TYPE) - 1 ), SUBSTRING(DATA_TYPE,1+POSITION(')' IN DATA_TYPE)))"\
-    ", data_type) as COLUMN_TYPE, "
+    "SUBSTRING(DATA_TYPE,1, POSITION('(' IN DATA_TYPE) - 1 ), data_type) as COLUMN_TYPE, "
 #define ONEQODBC_COLUMNS_BRACKETLEN\
-    "if(DATA_TYPE like '%(%)%', "\
+    "if(regexp_like(DATA_TYPE, '\\(\\d+\\)$'), "\
     "SUBSTRING(DATA_TYPE, POSITION('(' IN DATA_TYPE) + 1, POSITION(')' IN DATA_TYPE)-POSITION('(' IN DATA_TYPE)-1), "\
     "'NULL') as BracketLen"
 

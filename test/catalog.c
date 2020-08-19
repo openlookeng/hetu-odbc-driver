@@ -880,48 +880,43 @@ ODBC_TEST(gettypeinfo_time)
     return OK;
 }
 
-// Mapping Interval to VARCHAR cause this case invalid
-//ODBC_TEST(gettypeinfo_wchar)
-//{
-//    SQLCHAR params[64];
-//    SQLLEN ind, rc;
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_CHAR));
-//    CHECK_STMT_RC(Stmt, SQLFetch(Stmt));
-//    IS_STR(my_fetch_str(Stmt, params, 6), "LENGTH", sizeof("LENGTH"));
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_VARCHAR));
-//    CHECK_STMT_RC(Stmt, SQLFetch(Stmt));
-//    IS_STR(my_fetch_str(Stmt, params, 6), "max length", sizeof("max length"));
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_WLONGVARCHAR));
-//    rc = SQLFetch(Stmt);
-//    is_num(rc, SQL_NO_DATA);
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_INTEGER));
-//    CHECK_STMT_RC(Stmt, SQLFetch(Stmt));
-//    CHECK_STMT_RC(Stmt, SQLGetData(Stmt, 6, SQL_C_CHAR, params, sizeof(params), &ind));
-//    is_num(ind, SQL_NULL_DATA);
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_WCHAR));
-//    rc = SQLFetch(Stmt);
-//    is_num(rc, SQL_NO_DATA);
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_WVARCHAR));
-//    rc = SQLFetch(Stmt);
-//    is_num(rc, SQL_NO_DATA);
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//
-//    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_LONGVARCHAR));
-//    rc = SQLFetch(Stmt);
-//    is_num(rc, SQL_NO_DATA);
-//    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
-//    return OK;
-//}
+
+ODBC_TEST(gettypeinfo_char)
+{
+    SQLCHAR params[64];
+    SQLLEN ind, rc;
+    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_CHAR));
+    CHECK_STMT_RC(Stmt, SQLFetch(Stmt));
+    IS_STR(my_fetch_str(Stmt, params, 6), "LENGTH", sizeof("LENGTH"));
+    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+
+    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_WLONGVARCHAR));
+    rc = SQLFetch(Stmt);
+    is_num(rc, SQL_NO_DATA);
+    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+
+    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_INTEGER));
+    CHECK_STMT_RC(Stmt, SQLFetch(Stmt));
+    CHECK_STMT_RC(Stmt, SQLGetData(Stmt, 6, SQL_C_CHAR, params, sizeof(params), &ind));
+    is_num(ind, SQL_NULL_DATA);
+    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+
+    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_WCHAR));
+    rc = SQLFetch(Stmt);
+    is_num(rc, SQL_NO_DATA);
+    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+
+    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_WVARCHAR));
+    rc = SQLFetch(Stmt);
+    is_num(rc, SQL_NO_DATA);
+    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+
+    CHECK_STMT_RC(Stmt, SQLGetTypeInfo(Stmt, SQL_LONGVARCHAR));
+    rc = SQLFetch(Stmt);
+    is_num(rc, SQL_NO_DATA);
+    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+    return OK;
+}
 
 ODBC_TEST(t_sqlstatistics)
 {
@@ -1280,7 +1275,7 @@ MA_ODBC_TESTS my_tests[]=
   { sqlcol_catalognotexist , "sqlcol_catalognotexist" },
   { gettypeinfo_colnumber, "gettypeinfo_colnumber" },
   { gettypeinfo_time, "gettypeinfo_time" },
-  //{ gettypeinfo_wchar, "gettypeinfo_wchar" },
+  { gettypeinfo_char, "gettypeinfo_char" },
   { t_sqlstatistics, "t_sqlstatistics" },
   { t_sqltablepriv, "t_sqltablepriv" },
   { t_sqlprocedures, "t_sqlprocedures" },

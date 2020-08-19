@@ -34,13 +34,17 @@ MADB_TypeInfo TypeInfoV3[]=
     { "integer",SQL_INTEGER,10,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"0","0","NULL","integer","NULL","NULL","NULL","10",SQL_INTEGER },
     { "real",SQL_REAL,24,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"0","0","NULL","real","0","0","NULL","2",SQL_REAL},
     { "varchar",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_SEARCHABLE,"NULL","0","NULL","varchar","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "array",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","array","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "map",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","map","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "row",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","row","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "json",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","json","NULL","NULL","NULL","NULL",SQL_VARCHAR },
     { "char",SQL_CHAR,255,"''''","''''","'LENGTH'",1,0,SQL_SEARCHABLE,"NULL","0","NULL","char","NULL","NULL","NULL","NULL",SQL_CHAR },
     { "varbinary",SQL_VARBINARY,2048,"'0x'''","NULL","'max length'",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","varbinary","NULL","NULL","NULL","NULL",SQL_VARBINARY },
     { "date",SQL_TYPE_DATE,10,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","date","NULL","NULL","1","NULL",SQL_DATE },
     { "time",SQL_TYPE_TIME,12,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","time","0","3","2","NULL",SQL_DATE },
     { "timestamp",SQL_TYPE_TIMESTAMP,23,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","timestamp","0","3","3","NULL",SQL_DATE },
-    { "interval year to month",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_SEARCHABLE,"NULL","0","NULL","interval year to month","NULL","NULL","NULL","NULL",SQL_VARCHAR },
-    { "interval day to second",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_SEARCHABLE,"NULL","0","NULL","interval day to second","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "interval year to month",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","interval year to month","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "interval day to second",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","interval day to second","NULL","NULL","NULL","NULL",SQL_VARCHAR },
     { NULL,0,0,NULL,NULL,NULL,0,0,0,0,0,0,NULL,0,0,0,0,0,0 }
 
 
@@ -56,13 +60,17 @@ MADB_TypeInfo TypeInfoV2[]=
     { "integer",SQL_INTEGER,10,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"0","0","NULL","integer","NULL","NULL","NULL","10",SQL_INTEGER },
     { "real",SQL_REAL,24,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"0","0","NULL","real","0","0","NULL","2",SQL_REAL },
     { "varchar",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_SEARCHABLE,"NULL","0","NULL","varchar","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "array",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","array","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "map",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","map","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "row",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","row","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "json",SQL_VARCHAR,2048,"''''","''''","'max length'",1,0,SQL_UNSEARCHABLE,"NULL","0","NULL","json","NULL","NULL","NULL","NULL",SQL_VARCHAR },
     { "char",SQL_CHAR,255,"''''","''''","'LENGTH'",1,0,SQL_SEARCHABLE,"NULL","0","NULL","char","NULL","NULL","NULL","NULL",SQL_CHAR },
     { "varbinary",SQL_VARBINARY,2048,"'0x'''","NULL","'max length'",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","varbinary","NULL","NULL","NULL","NULL",SQL_VARBINARY }, //todo 0x
     { "date",SQL_TYPE_DATE,10,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","date","NULL","NULL","1","NULL",SQL_DATE },
     { "time",SQL_TYPE_TIME,12,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","time","0","3","2","NULL",SQL_DATE },
     { "timestamp",SQL_TYPE_TIMESTAMP,23,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","timestamp","0","3","3","NULL",SQL_DATE },
-    { "interval year to month",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_SEARCHABLE,"NULL","0","NULL","interval year to month","NULL","NULL","NULL","NULL",SQL_VARCHAR },
-    { "interval day to second",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_SEARCHABLE,"NULL","0","NULL","interval day to second","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "interval year to month",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","interval year to month","NULL","NULL","NULL","NULL",SQL_VARCHAR },
+    { "interval day to second",SQL_VARCHAR,2048,"NULL","NULL","NULL",1,0,SQL_ALL_EXCEPT_LIKE,"NULL","0","NULL","interval day to second","NULL","NULL","NULL","NULL",SQL_VARCHAR },
     { NULL,0,0,NULL,NULL,NULL,0,0,0,0,0,0,NULL,0,0,0,0,0,0 }
 };
 
