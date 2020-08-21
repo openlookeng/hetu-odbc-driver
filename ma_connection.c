@@ -137,6 +137,7 @@ my_bool CheckConnection(MADB_Dbc *Dbc)
 SQLRETURN MADB_DbcSetAttr(MADB_Dbc *Dbc, SQLINTEGER Attribute, SQLPOINTER ValuePtr, SQLINTEGER StringLength, my_bool isWChar)
 {
   MADB_CLEAR_ERROR(&Dbc->Error);
+  ma_debug_print(0, "******** is ConnectionOptionSet Attr(%d) Valptr(%d)", Attribute, (ValuePtr != NULL) ? 1 : 0);
 
   if (!Dbc)
   {
