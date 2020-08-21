@@ -2252,6 +2252,7 @@ SQLRETURN MADB_StmtGetAttr(MADB_Stmt *Stmt, SQLINTEGER Attribute, SQLPOINTER Val
     break;
   case SQL_ATTR_USE_BOOKMARKS:
     *(SQLUINTEGER *)ValuePtr= Stmt->Options.UseBookmarks;
+    break;
   case SQL_ATTR_SIMULATE_CURSOR:
     *(SQLULEN *)ValuePtr= Stmt->Options.SimulateCursor;
     break;
@@ -4334,7 +4335,7 @@ SQLRETURN MADB_StmtSetPos(MADB_Stmt *Stmt, SQLSETPOSIROW RowNumber, SQLUSMALLINT
         if (!SQL_SUCCEEDED(Stmt->Methods->RefreshDynamicCursor(Stmt)))
           return Stmt->Error.ReturnValue;
       EnterCriticalSection(&Stmt->Connection->cs);
-      Stmt->Cursor.Position+=(RowNumber - 1);
+      Stmt->Cursor.Position=(RowNumber - 1);
       MADB_StmtDataSeek(Stmt, Stmt->Cursor.Position);
       LeaveCriticalSection(&Stmt->Connection->cs);
     }

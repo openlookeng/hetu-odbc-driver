@@ -488,61 +488,414 @@ ODBC_TEST(test_cursor_type)
     return OK;
 }
 
+ODBC_TEST(test_cursor_attribute)
+{
+    SQLHANDLE   henv1;
+    SQLHANDLE   hdbc1;
+    SQLHANDLE   hstmt1;
+    SQLULEN     type;
+    SQLULEN     attributes;
+    SQLUINTEGER properties;
+
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+
+    CHECK_DBC_RC(hstmt1, SQLGetStmtAttr(hstmt1, SQL_ATTR_CURSOR_SENSITIVITY, (SQLPOINTER)&attributes, sizeof(attributes), NULL));
+    is_num(attributes, SQL_UNSPECIFIED);
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_SCROLL_OPTIONS, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties, SQL_SO_FORWARD_ONLY|SQL_SO_STATIC);
+    
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_STATIC_CURSOR_ATTRIBUTES1, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , (SQL_CA1_ABSOLUTE|SQL_CA1_BOOKMARK|SQL_CA1_NEXT|
+                         SQL_CA1_RELATIVE|SQL_CA1_LOCK_NO_CHANGE|SQL_CA1_POS_POSITION));
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_STATIC_CURSOR_ATTRIBUTES2, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , (SQL_CA2_CRC_EXACT|SQL_CA2_MAX_ROWS_DELETE|SQL_CA2_MAX_ROWS_INSERT|
+                         SQL_CA2_MAX_ROWS_SELECT|SQL_CA2_MAX_ROWS_UPDATE));
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , (SQL_CA1_ABSOLUTE|SQL_CA1_NEXT|SQL_CA1_RELATIVE|
+                         SQL_CA1_LOCK_NO_CHANGE|SQL_CA1_POS_POSITION));
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , (SQL_CA2_CRC_EXACT|SQL_CA2_MAX_ROWS_DELETE|SQL_CA2_MAX_ROWS_INSERT|
+                         SQL_CA2_MAX_ROWS_SELECT|SQL_CA2_MAX_ROWS_UPDATE));
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_DYNAMIC_CURSOR_ATTRIBUTES1, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , 0);
+    
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_DYNAMIC_CURSOR_ATTRIBUTES2, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , 0);
+    
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_KEYSET_CURSOR_ATTRIBUTES1, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , 0);
+    
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_KEYSET_CURSOR_ATTRIBUTES2, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties , 0);
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_STATIC_SENSITIVITY, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties, 0);
+
+    CHECK_DBC_RC(hdbc1, SQLGetInfo(hdbc1, SQL_POS_OPERATIONS, (SQLPOINTER)&properties, sizeof(properties), NULL));
+    is_num(properties, SQL_POS_POSITION);
+    
+    CHECK_STMT_RC(hstmt1, SQLGetStmtAttr(hstmt1, SQL_ATTR_CURSOR_SCROLLABLE, (SQLPOINTER)&type, sizeof(type), NULL));
+    is_num(type, SQL_CURSOR_STATIC);
+
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_CURSOR_SCROLLABLE, (SQLPOINTER)SQL_NONSCROLLABLE, 0));
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_cursor_attribute");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_cursor_attribute (id INTEGER, name VARCHAR(20))");
+    OK_SIMPLE_STMT(hstmt1, "INSERT INTO test_cursor_attribute VALUES (0,'MyData0'),(1,'MyData1'),"
+                   "(2,'MyData2'),(3,'MyData3'),(4,'MyData4')");
+
+    CHECK_STMT_RC(hstmt1, SQLGetStmtAttr(hstmt1, SQL_ATTR_CURSOR_SCROLLABLE, (SQLPOINTER)&type, sizeof(type), NULL));
+    is_num(type, SQL_CURSOR_FORWARD_ONLY);
+
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_cursor_attribute ORDER BY id");
+
+    // test scroll disable with SQL_NONSCROLLABLE
+    FAIL_IF(SQLFetchScroll(hstmt1, SQL_FETCH_FIRST, 0L) == SQL_SUCCESS, "expect no scrollable");
+
+    /* free the statement cursor */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_cursor_attribute");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+    return OK; 
+}
+
 ODBC_TEST(test_scroll_cursor)
 {
+    SQLHANDLE   henv1;
+    SQLHANDLE   hdbc1;
+    SQLHANDLE   hstmt1;
+
     SQLCHAR     data[MAX_NAME_LEN];
 
-    OK_SIMPLE_STMT(Stmt, "DROP TABLE IF EXISTS test_scroll_cursor");
-    OK_SIMPLE_STMT(Stmt, "CREATE TABLE test_scroll_cursor (id INTEGER, name VARCHAR(20))");
-    OK_SIMPLE_STMT(Stmt, "INSERT INTO test_scroll_cursor VALUES (0,'MyData0'),(1,'MyData1'),"
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_scroll_cursor");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_scroll_cursor (id INTEGER, name VARCHAR(20))");
+    OK_SIMPLE_STMT(hstmt1, "INSERT INTO test_scroll_cursor VALUES (0,'MyData0'),(1,'MyData1'),"
                    "(2,'MyData2'),(3,'MyData3'),(4,'MyData4')");
 
     /* Open the resultset of table 'my_demo_cursor' */
-    OK_SIMPLE_STMT(Stmt,"SELECT * FROM test_scroll_cursor ORDER BY id");
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_scroll_cursor ORDER BY id");
     
     /* goto the last row */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_LAST, 0L));
-    is_num(my_fetch_int(Stmt, 1), 4);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData4", strlen("MyData4"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_LAST, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 4);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData4", strlen("MyData4"));
 
     /* goto the pre of last row */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_PRIOR, 0L));
-    is_num(my_fetch_int(Stmt, 1), 3);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData3", strlen("MyData3"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_PRIOR, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 3);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData3", strlen("MyData3"));
 
     /* goto the first row */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_FIRST, 0L));
-    is_num(my_fetch_int(Stmt, 1), 0);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData0", strlen("MyData0"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_FIRST, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 0);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData0", strlen("MyData0"));
     
     /* goto row 1 */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_ABSOLUTE, 1L));
-    is_num(my_fetch_int(Stmt, 1), 0);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData0", strlen("MyData0"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_ABSOLUTE, 1L));
+    is_num(my_fetch_int(hstmt1, 1), 0);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData0", strlen("MyData0"));
 
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_NEXT, 0L));
-    is_num(my_fetch_int(Stmt, 1), 1);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData1", strlen("MyData1"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_NEXT, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 1);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData1", strlen("MyData1"));
 
     /* move 2 rows foward */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_RELATIVE, 2L));
-    is_num(my_fetch_int(Stmt, 1), 3);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData3", strlen("MyData3"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_RELATIVE, 2L));
+    is_num(my_fetch_int(hstmt1, 1), 3);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData3", strlen("MyData3"));
 
     /* move 3 rows backward */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_RELATIVE, -3L));
-    is_num(my_fetch_int(Stmt, 1), 0);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData0", strlen("MyData0"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_RELATIVE, -3L));
+    is_num(my_fetch_int(hstmt1, 1), 0);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData0", strlen("MyData0"));
     
     /* goto row 4 */
-    CHECK_STMT_RC(Stmt, SQLFetchScroll(Stmt, SQL_FETCH_ABSOLUTE, 4L));
-    is_num(my_fetch_int(Stmt, 1), 3);
-    IS_STR(my_fetch_str(Stmt, data, 2), "MyData3", strlen("MyData3"));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_ABSOLUTE, 4L));
+    is_num(my_fetch_int(hstmt1, 1), 3);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData3", strlen("MyData3"));
     
     /* free the statement cursor */
-    CHECK_STMT_RC(Stmt, SQLFreeStmt(Stmt, SQL_CLOSE));
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
 
-    OK_SIMPLE_STMT(Stmt, "DROP TABLE IF EXISTS test_scroll_cursor");
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_scroll_cursor");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+    return OK;
+}
+
+// test set cursor position by SQLSetPos
+ODBC_TEST(test_cursor_set_pos)
+{
+#define CURSOR_SET_POS_RECORD_NAME_LEN    20
+#define CURSOR_SET_POS_RECORD_ARRAY_SIZE  5
+
+    SQLHANDLE   henv1;
+    SQLHANDLE   hdbc1;
+    SQLHANDLE   hstmt1;
+
+    typedef struct {
+        SQLINTEGER id;
+        SQLCHAR name[CURSOR_SET_POS_RECORD_NAME_LEN + 1];
+        SQLLEN idLen;
+        SQLLEN nameLen;
+    }Record;
+    Record record[CURSOR_SET_POS_RECORD_ARRAY_SIZE];
+    SQLULEN type;
+
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_cursor_set_pos");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_cursor_set_pos (id INTEGER, name VARCHAR(20))");
+    OK_SIMPLE_STMT(hstmt1, "INSERT INTO test_cursor_set_pos VALUES (1,'MyData1'),"
+                   "(2,'MyData2'),(3,'MyData3'),(4,'MyData4'),(5,'MyData5')");
+
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_ROW_BIND_TYPE, (SQLPOINTER)sizeof(Record), 0));
+
+    /* Open the resultset of table */
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_cursor_set_pos ORDER BY id");
+
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_LONG, &record[0].id, sizeof(record[0].id), &record[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 2, SQL_C_CHAR, record[0].name, sizeof(record[0].name), &record[0].nameLen));
+
+    /* test set position by SQLSetPos */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_FIRST, 0L)); //fetch any row so as to we can call SQLSetPos
+    CHECK_STMT_RC(hstmt1, SQLSetPos(hstmt1, 3, SQL_POSITION, SQL_LOCK_NO_CHANGE));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_RELATIVE, 0L));
+    is_num(record[0].id, 3);
+    IS_STR(record[0].name, "MyData3", strlen("MyData3"));
+
+    CHECK_STMT_RC(hstmt1, SQLSetPos(hstmt1, 1, SQL_POSITION, SQL_LOCK_NO_CHANGE));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_RELATIVE, 0L));
+    is_num(record[0].id, 1);
+    IS_STR(record[0].name, "MyData1", strlen("MyData1"));
+
+    CHECK_STMT_RC(hstmt1, SQLSetPos(hstmt1, 5, SQL_POSITION, SQL_LOCK_NO_CHANGE));
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_RELATIVE, 0L));
+    is_num(record[0].id, 5);
+    IS_STR(record[0].name, "MyData5", strlen("MyData5"));
+
+    /* free the statement cursor */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    /* now change the cursor type to forward only */
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_CURSOR_SCROLLABLE, (SQLPOINTER)SQL_NONSCROLLABLE, 0));
+    CHECK_STMT_RC(hstmt1, SQLGetStmtAttr(hstmt1, SQL_ATTR_CURSOR_SCROLLABLE, (SQLPOINTER)&type, sizeof(type), NULL));
+    is_num(type, SQL_CURSOR_FORWARD_ONLY);
+
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_cursor_set_pos ORDER BY id");
+
+    FAIL_IF(SQLFetchScroll(hstmt1, SQL_FETCH_RELATIVE, 0L) == SQL_SUCCESS, "expect no scrollable");
+
+    /* free the statement cursor */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    /* now change to forward only cusrsors */
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_CURSOR_TYPE, (SQLPOINTER)SQL_CURSOR_FORWARD_ONLY, 0));
+
+    /* Open the resultset of table */
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_cursor_set_pos ORDER BY id");
+
+    /* test set position by SQLSetPos */
+    CHECK_STMT_RC(hstmt1, SQLFetch(hstmt1)); //fetch any row so as to we can call SQLSetPos
+    CHECK_STMT_RC(hstmt1, SQLSetPos(hstmt1, 3, SQL_POSITION, SQL_LOCK_NO_CHANGE));
+    CHECK_STMT_RC(hstmt1, SQLFetch(hstmt1));
+    is_num(record[0].id, 3);
+    IS_STR(record[0].name, "MyData3", strlen("MyData3"));
+
+    /* free the statement cursor */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_cursor_set_pos");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+#undef      CURSOR_SET_POS_RECORD_NAME_LEN
+#undef      CURSOR_SET_POS_RECORD_ARRAY_SIZE
+
+    return OK;
+}
+
+// test bookmark cursor operations
+ODBC_TEST(test_bookmark_cursor)
+{
+#define BOOKMARK_CURSOR_RECORD_NAME_LEN    20
+#define BOOKMARK_CURSOR_RECORD_ARRAY_SIZE  5
+
+    typedef struct {
+        SQLINTEGER id;
+        SQLCHAR name[BOOKMARK_CURSOR_RECORD_NAME_LEN + 1];
+        SQLLEN idLen;
+        SQLLEN nameLen;
+    }Record;
+
+    SQLCHAR     data[MAX_NAME_LEN];
+    Record      record[BOOKMARK_CURSOR_RECORD_ARRAY_SIZE];
+    SQLHANDLE   henv1;
+    SQLHANDLE   hdbc1;
+    SQLHANDLE   hstmt1;
+    SQLINTEGER  bookmarkType;
+    SQLINTEGER  bookmarkType1;
+    SQLINTEGER  bookMark = 1;
+
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+
+    bookmarkType = SQL_UB_FIXED;
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_USE_BOOKMARKS, (SQLPOINTER)SQL_UB_FIXED, sizeof(bookmarkType)));
+    CHECK_STMT_RC(hstmt1, SQLGetStmtAttr(hstmt1, SQL_ATTR_USE_BOOKMARKS, &bookmarkType1, 0, NULL));
+    is_num(bookmarkType1, bookmarkType);
+    
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_bookmark_cursor");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_bookmark_cursor (id INTEGER, name VARCHAR(20))");
+    OK_SIMPLE_STMT(hstmt1, "INSERT INTO test_bookmark_cursor VALUES (0,'MyData0'),(1,'MyData1'),(2,'MyData2'),(3,'MyData3'),(4,'MyData4')");
+
+    /* Open the resultset of table 'my_demo_cursor' */
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_bookmark_cursor ORDER BY id");
+
+    /* now bind cursor as bookmark (column 0 is for bookmark binding) */
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 0, SQL_C_BOOKMARK, &bookMark, sizeof(bookMark), NULL));
+
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_LONG, &record[0].id, sizeof(record[0].id), &record[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 2, SQL_C_CHAR, record[0].name, sizeof(record[0].name), &record[0].nameLen));
+
+    /* set bookmark value/position and check bookmark row */
+    bookMark = 1;
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 1);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData1", strlen("MyData1"));
+
+    /* get pre of current position by bookmark */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, -1L));
+    is_num(my_fetch_int(hstmt1, 1), 0);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData0", strlen("MyData0"));
+    is_num(bookMark, 0); /* now bookmark move to a backward position */
+
+    bookMark = 1; /* reset bookmark position to initial value */
+
+    /* get next of current position by bookmark */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, 1L));
+    is_num(my_fetch_int(hstmt1, 1), 2);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData2", strlen("MyData2"));
+    is_num(bookMark, 2); /* now bookmark move to a foward position */
+
+    /* test get current bookmark position */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 2);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData2", strlen("MyData2"));
+    is_num(bookMark, 2); /* now bookmark remain same */
+
+    /* free the statement cursor */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_bookmark_cursor");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+#undef BOOKMARK_CURSOR_RECORD_NAME_LEN
+#undef BOOKMARK_CURSOR_RECORD_ARRAY_SIZE
+
+    return OK;
+}
+
+// test bookmark cursor mixed with other scroll cursor
+ODBC_TEST(test_bookmark_cursor1)
+{
+#define BOOKMARK_CURSOR_RECORD_NAME_LEN    20
+#define BOOKMARK_CURSOR_RECORD_ARRAY_SIZE  5
+
+    typedef struct {
+        SQLINTEGER id;
+        SQLCHAR name[BOOKMARK_CURSOR_RECORD_NAME_LEN + 1];
+        SQLLEN idLen;
+        SQLLEN nameLen;
+    }Record;
+
+    SQLCHAR     data[MAX_NAME_LEN];
+    Record      record[BOOKMARK_CURSOR_RECORD_ARRAY_SIZE];
+    SQLHANDLE   henv1;
+    SQLHANDLE   hdbc1;
+    SQLHANDLE   hstmt1;
+    SQLINTEGER  bookmarkType;
+    SQLINTEGER  bookmarkType1;
+    SQLINTEGER  bookMark = 1;
+
+    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+
+    bookmarkType = SQL_UB_VARIABLE;
+    CHECK_STMT_RC(hstmt1, SQLSetStmtAttr(hstmt1, SQL_ATTR_USE_BOOKMARKS, (SQLPOINTER)SQL_UB_VARIABLE, sizeof(bookmarkType)));
+    CHECK_STMT_RC(hstmt1, SQLGetStmtAttr(hstmt1, SQL_ATTR_USE_BOOKMARKS, &bookmarkType1, 0, NULL));
+    is_num(bookmarkType1, bookmarkType);
+    
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_bookmark_cursor");
+    OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_bookmark_cursor (id INTEGER, name VARCHAR(20))");
+    OK_SIMPLE_STMT(hstmt1, "INSERT INTO test_bookmark_cursor VALUES (0,'MyData0'),(1,'MyData1'),(2,'MyData2'),(3,'MyData3'),(4,'MyData4')");
+
+    /* Open the resultset of table 'my_demo_cursor' */
+    OK_SIMPLE_STMT(hstmt1,"SELECT * FROM test_bookmark_cursor ORDER BY id");
+
+    /* now bind cursor as bookmark (column 0 is for bookmark binding) */
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 0, SQL_C_VARBOOKMARK, &bookMark, sizeof(bookMark), NULL));
+
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_LONG, &record[0].id, sizeof(record[0].id), &record[0].idLen));
+    CHECK_STMT_RC(hstmt1, SQLBindCol(hstmt1, 2, SQL_C_CHAR, record[0].name, sizeof(record[0].name), &record[0].nameLen));
+
+    /* set bookmark value/position and check bookmark row */
+    bookMark = 1;
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 1);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData1", strlen("MyData1"));
+
+    /* get pre of current position by bookmark */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, -1L));
+    is_num(my_fetch_int(hstmt1, 1), 0);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData0", strlen("MyData0"));
+    is_num(bookMark, 0); /* now bookmark move to a backward position */
+
+    bookMark = 1; /* reset bookmark position to initial value */
+
+    /* get next of current position by bookmark */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, 1L));
+    is_num(my_fetch_int(hstmt1, 1), 2);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData2", strlen("MyData2"));
+    is_num(bookMark, 2); /* now bookmark move to a foward position */
+
+    /* test get current bookmark position */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_BOOKMARK, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 2);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData2", strlen("MyData2"));
+    is_num(bookMark, 2); /* now bookmark remain same */
+
+    /* goto the first row */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_FIRST, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 0);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData0", strlen("MyData0"));
+    is_num(bookMark, 0); /* now bookmark comes to first */
+
+    /* goto the last row */
+    CHECK_STMT_RC(hstmt1, SQLFetchScroll(hstmt1, SQL_FETCH_LAST, 0L));
+    is_num(my_fetch_int(hstmt1, 1), 4);
+    IS_STR(my_fetch_str(hstmt1, data, 2), "MyData4", strlen("MyData4"));
+    is_num(bookMark, 4); /* now bookmark comes to last */
+
+    /* free the statement cursor */
+    CHECK_STMT_RC(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
+
+    OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_bookmark_cursor");
+
+    ODBC_Disconnect(henv1, hdbc1, hstmt1);
+
+#undef BOOKMARK_CURSOR_RECORD_NAME_LEN
+#undef BOOKMARK_CURSOR_RECORD_ARRAY_SIZE
 
     return OK;
 }
@@ -1249,7 +1602,11 @@ MA_ODBC_TESTS my_tests[]=
     {test_stmt_desc_attr1,          "test_attribute_ard_ird"},
     {test_desc_status_array,        "test_descriptor_status_array"},
     {test_cursor_type,              "test_cursor_type"},
+    {test_cursor_attribute,         "test_cursor_attribute"},
     {test_scroll_cursor,            "test_scroll_cursor"},
+    {test_cursor_set_pos,           "test_cursor_set_pos"},
+    {test_bookmark_cursor,          "test_bookmark_cursor"},
+    {test_bookmark_cursor1,         "test_bookmark_cursor_mix"},
     {test_param_bind_by_row,        "test_param_bind_by_row"},
     {test_param_bind_by_col,        "test_param_bind_by_column"},
     {test_param_with_ignore_set,    "test_param_with_ignore_set"},
