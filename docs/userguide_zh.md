@@ -147,7 +147,7 @@ KerberosKeytabPath=F:/openLooKeng/user.keytab
 
 ## 驱动支持的数据类型
 
-本驱动支持的数据类型与对应的ODBC数据类型及openLooKeng数据类型如下：
+本驱动支持的数据类型与对应的ODBC数据类型如下：
 
 | openLooKeng数据类型   |       ODBC数据类型         |
 | :------------------: | :----------------------: |
@@ -167,6 +167,10 @@ KerberosKeytabPath=F:/openLooKeng/user.keytab
 |    `TIMESTAMP`       |    `SQL_TYPE_TIMESTAMP`  |
 |`INTERVAL YEAR TO MONTH`|  `SQL_VARCHAR`         |
 |`INTERVAL DAY TO SECOND`|  `SQL_VARCHAR`         |
+|`ARRAY`| `SQL_VARCHAR` |
+|`MAP`| `SQL_VARCHAR` |
+|`ROW`| `SQL_VARCHAR` |
+|`JSON`| `SQL_VARCHAR` |
 
 数据类型的详细信息用户可以通过调用Catalog Functions中的SQLGetTypInfo获得
 
