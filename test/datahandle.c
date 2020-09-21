@@ -97,7 +97,7 @@ ODBC_TEST(test_getdata_row)
     SQLCHAR val_varbin[BUFF_LEN];
     memset(val_varbin, 0, BUFF_LEN);
 
-    SQLSMALLINT TargetType[17] = { SQL_C_ULONG, SQL_C_SHORT, SQL_C_TINYINT, SQL_C_SHORT, SQL_C_LONG,
+    SQLSMALLINT TargetType[17] = { SQL_C_ULONG, SQL_C_BIT, SQL_C_TINYINT, SQL_C_SHORT, SQL_C_LONG,
                                      SQL_C_SBIGINT, SQL_C_DOUBLE, SQL_C_DOUBLE, SQL_C_CHAR,
                                      SQL_C_CHAR, SQL_C_CHAR, SQL_C_BINARY,
                                      SQL_C_TYPE_DATE, SQL_C_TYPE_TIME, SQL_C_TYPE_TIMESTAMP,

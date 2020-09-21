@@ -266,7 +266,7 @@ ODBC_TEST(test_data_query)
                                  "dt_date, dt_time, dt_timestamp,"
                                  "dt_interval_year_to_month, dt_interval_day_to_second FROM test_tbl_alldatatypes WHERE id = 1");
                                  
-    CHECK_STMT_RC(Stmt, SQLBindCol(Stmt, 1, SQL_C_BIT, &dtBooleanValue, 0, NULL));
+    CHECK_STMT_RC(Stmt, SQLBindCol(Stmt, 1, SQL_C_TINYINT, &dtBooleanValue, 0, NULL));
 
     CHECK_STMT_RC(Stmt, SQLBindCol(Stmt, 2, SQL_C_STINYINT, &dtTinyintValue, 0, NULL));
     CHECK_STMT_RC(Stmt, SQLBindCol(Stmt, 3, SQL_C_SSHORT, &dtSmallintValue, 0, NULL));
@@ -444,6 +444,55 @@ ODBC_TEST(test_DatesAndTime)
     return OK;
 }
 
+ODBC_TEST(test_prepare_boolean)
+{
+    /*Prepare Working Table*/
+    OK_SIMPLE_STMT(Stmt, "drop table if exists test_bool_prepare");
+
+    OK_SIMPLE_STMT(Stmt, "create table test_bool_prepare (\
+                           id  integer,\
+                           dt_bool BOOLEAN) COMMENT 'boolean types'");
+    /*Init Variables*/
+    SQLLEN      bindId = 0;
+    SQLSMALLINT bindRes = 9;
+    SQLSMALLINT getRes = 9;
+    SQLLEN      assertId[] = { 1, 2 };
+    SQLSMALLINT assertRes[] = { 1, 0 };
+
+    /* prepare statment */
+    CHECK_STMT_RC(Stmt, SQLPrepare(Stmt, "INSERT INTO test_bool_prepare (id, dt_bool) VALUES (1, true)", SQL_NTS));
+
+    CHECK_STMT_RC(Stmt, SQLExecute(Stmt));
+
+    OK_SIMPLE_STMT(Stmt, "PREPARE myPrepareStmt FROM INSERT INTO test_bool_prepare (id, dt_bool) VALUES (2,false)");
+
+    OK_SIMPLE_STMT(Stmt, "EXECUTE myPrepareStmt");
+
+    OK_SIMPLE_STMT(Stmt, "DEALLOCATE PREPARE myPrepareStmt");
+
+    OK_SIMPLE_STMT(Stmt, "select * from test_bool_prepare order by id");
+
+    CHECK_STMT_RC(Stmt, SQLBindCol(Stmt, 1, SQL_C_LONG, &bindId, 0, NULL));
+
+    CHECK_STMT_RC(Stmt, SQLBindCol(Stmt, 2, SQL_C_BIT, &bindRes, 0, NULL));
+
+    int index = 0;
+    while (SQL_SUCCEEDED(SQLFetch(Stmt)))
+    {
+        CHECK_STMT_RC(Stmt, SQLGetData(Stmt, 2, SQL_C_TINYINT, &getRes, 0, NULL));
+        is_num(bindId, assertId[index]);
+        is_num(bindRes, assertRes[index]);
+        is_num(getRes, assertRes[index]);
+        getRes = 9;
+        index++;
+    }
+
+
+    OK_SIMPLE_STMT(Stmt, "drop table if exists test_bool_prepare");
+
+    return OK;
+}
+
 
 /*****************************************************************/
 // data type for metadata information relate apis:
@@ -466,6 +515,7 @@ MA_ODBC_TESTS my_tests[]=
     {test_SQLDescribeParam_API,  "test_SQLDescribeCol_API"},
     {test_data_query,            "test_data_query"},
     {test_DatesAndTime,          "test_DatesAndTime"},
+    {test_prepare_boolean,       "test_prepare_boolean"},
     {tests_cleanup,              "clean_up_dataset"},
     {NULL, NULL}
 };
