@@ -150,6 +150,7 @@ typedef struct st_madb_dsn
   char    *Schema;
   char    *ConnectCfgFile;
   char    *ConnectUrl;
+  my_bool  BinaryExec; // for SQLExecDirect, use prepare/execute to exchange messge in binary format(use query to reduce message exchange frequency)
 } MADB_Dsn;
 
 /* this structure is used to store and retrieve DSN Information */

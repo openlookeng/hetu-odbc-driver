@@ -17,14 +17,27 @@
 
 #include "tap.h"
 
+static int ODBC_Connect_statement_test(SQLHANDLE *Env, SQLHANDLE *Connection, SQLHANDLE *Stmt, char *add_conn_para)
+{
+  *Env=         NULL;
+  *Connection=  NULL;
+
+  IS(AllocEnvConn(Env, Connection));
+
+  *Stmt= DoConnect(*Connection, FALSE, NULL, NULL, NULL, 0, NULL, NULL, NULL, add_conn_para);
+
+  return (*Stmt == NULL ? FAIL : OK);
+}
+
+
 /* test explain statement */
-ODBC_TEST(test_query_explain)
+int test_query_explain(char *add_conn_parameters)
 {
     SQLHANDLE   henv1;
     SQLHANDLE   hdbc1;
     SQLHANDLE   hstmt1;
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
     
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_query_explain");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_query_explain (id INTEGER, name CHAR(20))");
@@ -46,14 +59,24 @@ ODBC_TEST(test_query_explain)
     return OK;
 }
 
+ODBC_TEST(test_query_explain_0)
+{
+    return test_query_explain("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_query_explain_1)
+{
+    return test_query_explain("BINARY_EXCHANGE=1");
+}
+
 /* test explain analyze statement */
-ODBC_TEST(test_query_explain_analyze)
+int test_query_explain_analyze(char *add_conn_parameters)
 {
     SQLHANDLE   henv1;
     SQLHANDLE   hdbc1;
     SQLHANDLE   hstmt1;
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
     
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_query_explain_analyze");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_query_explain_analyze (id INTEGER, name CHAR(20))");
@@ -75,8 +98,18 @@ ODBC_TEST(test_query_explain_analyze)
     return OK;
 }
 
+ODBC_TEST(test_query_explain_analyze_0)
+{
+    return test_query_explain_analyze("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_query_explain_analyze_1)
+{
+    return test_query_explain_analyze("BINARY_EXCHANGE=1");
+}
+
 /* test basic values */
-ODBC_TEST(test_statment_values)
+int test_statment_values(char *add_conn_parameters)
 {
 #define CREATE_TABLE_AS_RECORD_NAME_LEN    20
 #define CREATE_TABLE_AS_RECORD_ARRAY_SIZE  3
@@ -97,7 +130,7 @@ ODBC_TEST(test_statment_values)
     Record       record0[CREATE_TABLE_AS_RECORD_ARRAY_SIZE];
     Record       record[CREATE_TABLE_AS_RECORD_ARRAY_SIZE];
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
     
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_statment_values");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_statment_values (id INTEGER, name CHAR(20))");
@@ -140,8 +173,18 @@ ODBC_TEST(test_statment_values)
     return OK;
 }
 
+ODBC_TEST(test_statment_values_0)
+{
+    return test_statment_values("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_statment_values_1)
+{
+    return test_statment_values("BINARY_EXCHANGE=1");
+}
+
 /* test show catalogs */
-ODBC_TEST(test_show_catalogs)
+int test_show_catalogs(char *add_conn_parameters)
 {
 #define SHOW_CATALOGS_RECORD_NAME_LEN    512
     SQLHANDLE   henv1;
@@ -151,7 +194,7 @@ ODBC_TEST(test_show_catalogs)
 
     SQLCHAR     record[SHOW_CATALOGS_RECORD_NAME_LEN];
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
     
     CHECK_STMT_RC(hstmt1, SQLExecDirect(hstmt1, "SHOW CATALOGS", SQL_NTS));
 
@@ -169,8 +212,18 @@ ODBC_TEST(test_show_catalogs)
     return OK;
 }
 
+ODBC_TEST(test_show_catalogs_0)
+{
+    return test_show_catalogs("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_show_catalogs_1)
+{
+    return test_show_catalogs("BINARY_EXCHANGE=1");
+}
+
 /* test schemas operation */
-ODBC_TEST(test_schemas_operation)
+int test_schemas_operation(char *add_conn_parameters)
 {
 #define SCHEMAS_OPERATION_RECORD_NAME_LEN    512    
     SQLHANDLE   henv1;
@@ -183,7 +236,7 @@ ODBC_TEST(test_schemas_operation)
     SQLSMALLINT findFlag = 0;
     char       *schemaName = "my_schemas_operation_schema";
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
 
     /* first drop exist schema with same name */
     OK_SIMPLE_STMT(hstmt1, "DROP SCHEMA IF EXISTS my_schemas_operation_schema");
@@ -216,7 +269,17 @@ ODBC_TEST(test_schemas_operation)
     return OK;
 }
 
-ODBC_TEST(test_table_operation)
+ODBC_TEST(test_schemas_operation_0)
+{
+    return test_schemas_operation("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_schemas_operation_1)
+{
+    return test_schemas_operation("BINARY_EXCHANGE=1");
+}
+
+int test_table_operation(char *add_conn_parameters)
 {
 #define TABLE_OPERATION_RECORD_NAME_LEN    512
     SQLHANDLE   henv1;
@@ -228,8 +291,8 @@ ODBC_TEST(test_table_operation)
     SQLCHAR     record[TABLE_OPERATION_RECORD_NAME_LEN];
     SQLSMALLINT findFlag = 0;
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
-
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
+    
     /* first drop exist table with same name */
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_tables_operation_table");
 
@@ -259,6 +322,16 @@ ODBC_TEST(test_table_operation)
 #undef TABLE_OPERATION_RECORD_NAME_LEN
 
     return OK;
+}
+
+ODBC_TEST(test_table_operation_0)
+{
+    return test_table_operation("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_table_operation_1)
+{
+    return test_table_operation("BINARY_EXCHANGE=1");
 }
 
 /* test show columns */
@@ -1098,7 +1171,7 @@ ODBC_TEST(test_delete_data)
     return OK;
 }
 
-ODBC_TEST(test_describe_operation)
+int test_describe_operation(char *add_conn_parameters)
 {
 #define DESCRIBE_OPERATION_RECORD_NAME_LEN    512
 #define DESCRIBE_OPERATION_RECORD_ROW_COUNT   2
@@ -1112,7 +1185,7 @@ ODBC_TEST(test_describe_operation)
     SQLSMALLINT findFlag = 0;
     char        colName[][DESCRIBE_OPERATION_RECORD_NAME_LEN] = {"id", "value"};
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
 
     /* first drop exist table with same name */
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_describe_operation");
@@ -1139,6 +1212,16 @@ ODBC_TEST(test_describe_operation)
 #undef DESCRIBE_OPERATION_RECORD_NAME_LEN
 
     return OK;
+}
+
+ODBC_TEST(test_describe_operation_0)
+{
+    return test_describe_operation("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_describe_operation_1)
+{
+    return test_describe_operation("BINARY_EXCHANGE=1");
 }
 
 ODBC_TEST(test_role_operation)
@@ -1224,7 +1307,7 @@ ODBC_TEST(test_role_operation)
 }
 
 /* test basic prepare and execute */
-ODBC_TEST(test_prepare_execute)
+int test_prepare_execute(char *add_conn_parameters)
 {
 #define PREPARE_EXECUTE_RECORD_NAME_LEN    20
 #define PREPARE_EXECUTE_RECORD_ARRAY_SIZE  3
@@ -1245,8 +1328,8 @@ ODBC_TEST(test_prepare_execute)
     Record       record[PREPARE_EXECUTE_RECORD_ARRAY_SIZE];
     SQLRETURN    rc;
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
-
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
+    
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_prepare_execute");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_prepare_execute (id INTEGER, name VARCHAR(20))");
 
@@ -1296,7 +1379,17 @@ ODBC_TEST(test_prepare_execute)
     return OK;
 }
 
-ODBC_TEST(test_execute_statement)
+ODBC_TEST(test_prepare_execute_0)
+{
+    return test_prepare_execute("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_prepare_execute_1)
+{
+    return test_prepare_execute("BINARY_EXCHANGE=1");
+}
+
+int test_execute_statement(char *add_conn_parameters)
 {
 #define EXECUTE_STATEMENT_RECORD_NAME_LEN    20
 #define EXECUTE_STATEMENT_RECORD_ARRAY_SIZE  3
@@ -1319,7 +1412,7 @@ ODBC_TEST(test_execute_statement)
     Record       record0[EXECUTE_STATEMENT_RECORD_ARRAY_SIZE];
     Record       record[EXECUTE_STATEMENT_RECORD_ARRAY_SIZE];
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
 
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_execute_statement");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_execute_statement (id INTEGER, value VARCHAR(10), name VARCHAR(20))");
@@ -1387,8 +1480,18 @@ ODBC_TEST(test_execute_statement)
     return OK;
 }
 
+ODBC_TEST(test_execute_statement_0)
+{
+    return test_execute_statement("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_execute_statement_1)
+{
+    return test_execute_statement("BINARY_EXCHANGE=1");
+}
+
 // data type conver
-ODBC_TEST(test_execute_statement1)
+int test_execute_statement1(char *add_conn_parameters)
 {
 #define EXECUTE_STATEMENT_RECORD_NAME_LEN    20
 #define EXECUTE_STATEMENT_RECORD_ARRAY_SIZE  1
@@ -1437,7 +1540,7 @@ ODBC_TEST(test_execute_statement1)
     Record       record0[EXECUTE_STATEMENT_RECORD_ARRAY_SIZE];
     Record       record[EXECUTE_STATEMENT_RECORD_ARRAY_SIZE];
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
 
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_execute_statement1");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_execute_statement1"
@@ -1574,7 +1677,18 @@ ODBC_TEST(test_execute_statement1)
     return OK;
 }
 
-ODBC_TEST(test_describe_input_output)
+ODBC_TEST(test_execute_statement1_0)
+{
+    return test_execute_statement1("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_execute_statement1_1)
+{
+    return test_execute_statement1("BINARY_EXCHANGE=1");
+}
+
+
+int test_describe_input_output(char *add_conn_parameters)
 {
 #define DESCRIBE_INPUT_OUTPUT_RECORD_NAME_LEN    20
 #define DESCRIBE_INPUT_OUTPUT_RECORD_ARRAY_SIZE  5
@@ -1582,7 +1696,7 @@ ODBC_TEST(test_describe_input_output)
     SQLHANDLE   hdbc1;
     SQLHANDLE   hstmt1;
 
-    ODBC_Connect(&henv1, &hdbc1, &hstmt1);
+    ODBC_Connect_statement_test(&henv1, &hdbc1, &hstmt1, add_conn_parameters);
 
     OK_SIMPLE_STMT(hstmt1, "DROP TABLE IF EXISTS test_describe_input_output");
     OK_SIMPLE_STMT(hstmt1, "CREATE TABLE test_describe_input_output (id INTEGER, name VARCHAR(20))");
@@ -1619,6 +1733,16 @@ ODBC_TEST(test_describe_input_output)
 #undef DESCRIBE_INPUT_OUTPUT_RECORD_ARRAY_SIZE
 
     return OK;
+}
+
+ODBC_TEST(test_describe_input_output_0)
+{
+    return test_describe_input_output("BINARY_EXCHANGE=0");
+}
+
+ODBC_TEST(test_describe_input_output_1)
+{
+    return test_describe_input_output("BINARY_EXCHANGE=1");
 }
 
 // test both describe input and output for one statement
@@ -1740,12 +1864,18 @@ ODBC_TEST(test_prepare_execute1)
 
 MA_ODBC_TESTS my_tests[]=
 {
-    {test_query_explain,               "test_query_explain"},
-    {test_query_explain_analyze,       "test_query_explain_analyze"},
-    {test_statment_values,             "test_statment_values"},
-    {test_show_catalogs,               "test_show_catalogs"},
-    {test_schemas_operation,           "test_schemas_operation"},
-    {test_table_operation,             "test_table_operation"},
+    {test_query_explain_0,             "test_query_explain with txt message"},
+    {test_query_explain_1,             "test_query_explain with bin message"},
+    {test_query_explain_analyze_0,     "test_query_explain_analyze with txt message"},
+    {test_query_explain_analyze_1,     "test_query_explain_analyze with bin message"},
+    {test_statment_values_0,           "test_statment_values with txt message"},
+    {test_statment_values_1,           "test_statment_values with bin message"},
+    {test_show_catalogs_0,             "test_show_catalogs with txt message"},
+    {test_show_catalogs_1,             "test_show_catalogs with bin message"},
+    {test_schemas_operation_0,         "test_schemas_operation with txt message"},
+    {test_schemas_operation_1,         "test_schemas_operation with bin message"},
+    {test_table_operation_0,           "test_table_operation with txt message"},
+    {test_table_operation_1,           "test_table_operation with bin message"},
     {test_show_columns,                "test_show_columns"},
     {test_show_create_table,           "test_show_create_table"},
     {test_show_stats,                  "test_show_stats"},
@@ -1757,16 +1887,21 @@ MA_ODBC_TESTS my_tests[]=
     {test_use_command,                 "test_use_command"},
     {test_create_table_as,             "test_command_create_table_as"},
     {test_role_operation,              "test_role_operation"},
-    {test_describe_operation,          "test_describe_operation"},
+    {test_describe_operation_0,        "test_describe_operation with txt message"},
+    {test_describe_operation_1,        "test_describe_operation with bin message"},
     {test_analyze_operation,           "test_analyze_operation"},
     {test_alert_table,                 "test_alert_table"},
     {test_update_data,                 "test_update_data"},
     {test_delete_data,                 "test_delete_data"},
-    {test_prepare_execute,             "test_prepare_execute"},
-    {test_prepare_execute1,             "test_prepare_execute_with_question_mark_character"},
-    {test_execute_statement,           "test_execute_statement"},
-    {test_execute_statement1,          "test_execute_statement_for_data_types"},
-    {test_describe_input_output,       "test_describe_input_output"},
+    {test_prepare_execute_0,           "test_prepare_execute with txt message"},
+    {test_prepare_execute_1,           "test_prepare_execute with bin message"},
+    {test_prepare_execute1,            "test_prepare_execute_with_question_mark_character"},
+    {test_execute_statement_0,         "test_execute_statement with txt message"},
+    {test_execute_statement_1,         "test_execute_statement with bin message"},
+    {test_execute_statement1_0,        "test_execute_statement_for_data_types with txt message"},
+    {test_execute_statement1_1,        "test_execute_statement_for_data_types with bin message"},
+    {test_describe_input_output_0,     "test_describe_input_output with txt message"},
+    {test_describe_input_output_1,     "test_describe_input_output with bin message"},
     {test_describe_input_output1,      "test_describe_input_output_with_one_statement"},
 
     {NULL, NULL}
