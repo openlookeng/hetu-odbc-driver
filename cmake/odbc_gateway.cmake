@@ -5,6 +5,8 @@ IF(GIT_EXECUTABLE)
                   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
   EXECUTE_PROCESS(COMMAND "${GIT_EXECUTABLE}" submodule update --remote odbc_gateway
                   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+  EXECUTE_PROCESS(COMMAND "${GIT_EXECUTABLE}" checkout "${GATEWAY_TAG}"
+                  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/odbc_gateway")
 ENDIF()
 IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/odbc_gateway/pom.xml)
   MESSAGE(FATAL_ERROR "No odbc_gateway! Run

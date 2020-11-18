@@ -48,9 +48,9 @@ TARGET_LINK_LIBRARIES(change_dsns_driver ${ODBC_LIBS} ${ODBC_INSTLIBS} legacy_st
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/wininstall/mariadb_odbc.xml.in
                ${CMAKE_BINARY_DIR}/wininstall/mariadb_odbc.xml)
 IF(${revno})
-  SET(MSI_PACKAGE "hetu-odbc-r${revno}-${PLATFORM}-1.0.1.msi")
+  SET(MSI_PACKAGE "hetu-odbc-r${revno}-${PLATFORM}-${PRODUCT_VERSION}.msi")
 ELSE()
-  SET(MSI_PACKAGE "hetu-odbc-${PLATFORM}-1.0.1.msi")
+  SET(MSI_PACKAGE "hetu-odbc-${PLATFORM}-${PRODUCT_VERSION}.msi")
 ENDIF()
 
 SET(ENV{MARIADB_ODBC_MSI_PACKAGE} "${MSI_PACKAGE}")
