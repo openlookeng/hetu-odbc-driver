@@ -88,6 +88,7 @@ MADB_DsnKey DsnKeys[]=
   { "CONNECTCFGFILE", offsetof(MADB_Dsn, ConnectCfgFile),   DSN_TYPE_STRING, 0, 0 },
   /*Add DB server connect whole url*/
   { "CONNECTURL",     offsetof(MADB_Dsn, ConnectUrl),       DSN_TYPE_STRING, 0, 0 },
+  { "BINARY_EXCHANGE",offsetof(MADB_Dsn, BinaryExec),       DSN_TYPE_BOOL,   0, 0 },
 
   /* Terminating Null */
   {NULL, 0, DSN_TYPE_BOOL,0,0}

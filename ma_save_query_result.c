@@ -217,13 +217,28 @@ static int convert_fill_float(char *field_data, char *buffer, unsigned long long
 static int convert_fill_date(char *field_data, char *buffer, unsigned long long buffer_len, unsigned long long *pos, unsigned long long *fill_len) {
     int    ret;
     unsigned int len;
+    int    year;
+    my_bool negative = 0;
     unsigned long long index;
     MYSQL_TIME tm;
+    char *field_data1 = field_data;
 
+    /* support negative year in date */
+    if (*field_data1 == '-') {
+        negative = 1;
+        field_data1 = &field_data[1];
+    }
+    
     memset(&tm, 0, sizeof(MYSQL_TIME));
-    ret = str_to_TIME(field_data, strlen(field_data), &tm);
+    ret = str_to_TIME(field_data1, strlen(field_data1), &tm);
     if (ret != 0) {
         return 1;
+    }
+
+    /* convert tm.year to negative in case of negative year */
+    if (negative) {
+        year = (int)tm.year;
+        tm.year = (unsigned int)(-year);
     }
 
     index = *pos;
@@ -323,6 +338,20 @@ static int convert_fill_time(char *field_data, char *buffer, unsigned long long 
 
 }
 
+static int convert_fill_bit(char *field_data, char *buffer, unsigned long long buffer_len, unsigned long long *pos, unsigned long long *fill_len) {
+    short value = (short)atoi(field_data);
+
+    /* data format: len(1 byte) + content(1 byte) */
+    fill_data_len_info(buffer, buffer_len, pos, 1);
+    
+    buffer[*pos] = (char)(value & 0xff);
+    *pos += 1;
+
+    *fill_len = 1 + sizeof(char); // 1 byte len info + 1 byte content
+    
+    return 0;
+}
+
 static int convert_fill_string(char *field_data, char *buffer, unsigned long long buffer_len, unsigned long long *pos, unsigned long long *fill_len) {
     unsigned int len;
     len = (unsigned int)strlen(field_data);
@@ -348,6 +377,7 @@ static TYPE_FILL_FUNC_MAP g_type2FillDataFunc[] = {
     {MYSQL_TYPE_SHORT,       convert_fill_short},
     {MYSQL_TYPE_YEAR,        convert_fill_short},
     {MYSQL_TYPE_TINY,        convert_fill_tiny},
+    {MYSQL_TYPE_BIT,         convert_fill_bit},
     {MYSQL_TYPE_DOUBLE,      convert_fill_double},
     {MYSQL_TYPE_FLOAT,       convert_fill_float},
     {MYSQL_TYPE_DATE,        convert_fill_date},
@@ -456,11 +486,83 @@ static void calc_row_buffer_len(MYSQL_STMT *stmt, MYSQL_ROW text_row, unsigned l
             length_len =  1 + sizeof(unsigned long long);
         }
 
+        /* length_len is not nescesary for some types of data, since packet_len must be equal or larger
+           than actual data bytes and we don't distinguish data types here, so add potencially length_len
+           for all data types.
+        */
         *packet_len += data_len + length_len;
     }
 }
 
-static my_bool store_result_as_binary(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
+static MYSQL_ROW unpack_one_text_row(MYSQL *mysql, unsigned int field_count) {
+    char          *to         = NULL;
+    char          *end_to     = NULL;
+    unsigned char *cp         = NULL;
+    NET           *net_packet = NULL;
+    MYSQL_ROW      text_row   = NULL;
+    unsigned int   index;
+    unsigned long  pkt_len;
+    unsigned long  section_len;
+
+    net_packet = &mysql->net;
+    pkt_len    = ma_net_safe_read(mysql);
+    if (pkt_len == packet_error) {
+        return NULL;
+    }
+
+    /* format of EOF: header = 0xfe and length of packet < 9, according to MySQL c/s protocal */
+    cp = net_packet->read_pos;
+    if ((*cp == 0xfe) && (pkt_len < 9)) {
+        if (pkt_len > 1) {
+          cp++;
+          mysql->warning_count = *((unsigned short*)cp);
+          cp += 2;
+          mysql->server_status = *((unsigned short*)cp);
+        }
+
+        return NULL;
+    }
+
+    //reserve one '\0' for each field, so total_content_len = field_count + pkt_len
+    text_row = (MYSQL_ROW)calloc(1, (field_count + 1) * sizeof(char*) + field_count + pkt_len);
+    if (text_row == NULL) {
+        SET_CLIENT_ERROR(mysql, CR_OUT_OF_MEMORY, SQLSTATE_UNKNOWN, 0);
+        return NULL;
+    }
+
+    to     = (char*)&text_row[field_count + 1];
+    end_to = to + field_count + pkt_len - 1;
+    cp     = net_packet->read_pos;
+    for (index = 0 ; index < field_count; index++)
+    {
+        section_len = (unsigned long)net_field_length(&cp);
+        if (section_len == NULL_LENGTH)
+        {
+            text_row[index] = NULL; /* null field */
+        }
+        else
+        {
+            text_row[index] = to;
+            if ((to > end_to) || (section_len > (unsigned long)(end_to - to)))
+            {
+                free(text_row);
+                SET_CLIENT_ERROR(mysql, CR_UNKNOWN_ERROR, SQLSTATE_UNKNOWN, 0);
+                return NULL;
+            }
+
+            memcpy(to, (char*)cp, section_len);
+            to[section_len] = '\0';
+            to += section_len + 1;
+            cp += section_len;
+        }
+    }
+    
+    text_row[index] = to; /* Fill th last field */
+
+    return text_row;
+}
+
+static my_bool store_result_as_binary(MYSQL_STMT *stmt) {
     MYSQL_ROW text_row = NULL;
     MYSQL_DATA *result = &stmt->result;
     MYSQL_ROWS *current = NULL;
@@ -477,7 +579,7 @@ static my_bool store_result_as_binary(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
     result->fields = stmt->field_count;
     pprevious = &result->data;
 
-    while ((text_row = mysql_fetch_row(resultSet)) != NULL) {
+    while ((text_row = unpack_one_text_row(stmt->mysql, result->fields)) != NULL) {
         /* data format: status(1byte)+null_bits()+content
            content format: a.len+content for normal field;
                            b.null for empty field
@@ -490,6 +592,7 @@ static my_bool store_result_as_binary(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
         binary_buffer = (char*)calloc(1, packet_len);
         if (binary_buffer == NULL) {
             //caller to free memory of stmt->result.alloc
+            free(text_row);
             SET_CLIENT_STMT_ERROR(stmt, CR_OUT_OF_MEMORY, SQLSTATE_UNKNOWN, 0);
             return 1;
         }
@@ -517,6 +620,7 @@ static my_bool store_result_as_binary(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
         if (!(current = (MYSQL_ROWS *)ma_alloc_root(&stmt->result.alloc, sizeof(MYSQL_ROWS) + binary_len)))
         {
             SET_CLIENT_STMT_ERROR(stmt, CR_OUT_OF_MEMORY, SQLSTATE_UNKNOWN, 0);
+            free(text_row);
             free(binary_buffer);
             return (1);
         }
@@ -527,6 +631,8 @@ static my_bool store_result_as_binary(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
         *pprevious = NULL;
 
         memcpy_s((char*)current->data, binary_len, binary_buffer, binary_len);
+        free(text_row);
+        text_row = NULL;
         free(binary_buffer);
         binary_buffer = NULL;
         result->rows++;
@@ -569,7 +675,7 @@ static int copy_field_param(MA_MEM_ROOT *mem_root, char *source, char **dest) {
     return 0;
 }
 
-static my_bool store_statement_fields(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
+static my_bool store_statement_fields(MYSQL_STMT *stmt, MYSQL_FIELD *fields) {
     MADB_STMT_EXTENSION *extension = stmt->extension;
     MA_MEM_ROOT *fields_root = &extension->fields_ma_alloc_root;
     size_t alloc_size = sizeof(MYSQL_FIELD) * stmt->field_count;
@@ -582,22 +688,22 @@ static my_bool store_statement_fields(MYSQL_STMT *stmt, MYSQL_RES *resultSet) {
 
     memset(stmt->fields, 0, alloc_size);
     for (unsigned int i = 0; i < stmt->field_count; i++) {
-        ret = memcpy_s(&stmt->fields[i], sizeof(MYSQL_FIELD), &resultSet->fields[i], sizeof(MYSQL_FIELD));
+        ret = memcpy_s(&stmt->fields[i], sizeof(MYSQL_FIELD), &fields[i], sizeof(MYSQL_FIELD));
 
         ret = 0;
-        ret |= copy_field_param(fields_root, resultSet->fields[i].name, &stmt->fields[i].name);
+        ret |= copy_field_param(fields_root, fields[i].name, &stmt->fields[i].name);
 
-        ret |= copy_field_param(fields_root, resultSet->fields[i].org_name, &stmt->fields[i].org_name);
+        ret |= copy_field_param(fields_root, fields[i].org_name, &stmt->fields[i].org_name);
         
-        ret |= copy_field_param(fields_root, resultSet->fields[i].table, &stmt->fields[i].table);
+        ret |= copy_field_param(fields_root, fields[i].table, &stmt->fields[i].table);
     
-        ret |= copy_field_param(fields_root, resultSet->fields[i].org_table, &stmt->fields[i].org_table);
+        ret |= copy_field_param(fields_root, fields[i].org_table, &stmt->fields[i].org_table);
     
-        ret |= copy_field_param(fields_root, resultSet->fields[i].db, &stmt->fields[i].db);
+        ret |= copy_field_param(fields_root, fields[i].db, &stmt->fields[i].db);
     
-        ret |= copy_field_param(fields_root, resultSet->fields[i].catalog, &stmt->fields[i].catalog);
+        ret |= copy_field_param(fields_root, fields[i].catalog, &stmt->fields[i].catalog);
     
-        ret |= copy_field_param(fields_root, resultSet->fields[i].def, &stmt->fields[i].def);
+        ret |= copy_field_param(fields_root, fields[i].def, &stmt->fields[i].def);
         
         if (ret != 0) {
             // caller to free memory allocated from fields_root
@@ -637,26 +743,27 @@ static void store_result_error_exit(MYSQL_STMT *stmt) {
     return;
 }
 
-SQLRETURN MADB_StoreQueryResult(MADB_Stmt * Stmt, MYSQL_RES * resultSet) {
+SQLRETURN MADB_StoreQueryResult(MADB_Stmt * Stmt) {
     unsigned int last_server_status;
     size_t       alloc_size;
     my_bool      ret;
     MYSQL_STMT  *stmt                 = NULL;
     MA_MEM_ROOT *fields_ma_alloc_root = NULL;
 
-    MADB_STMT_CLOSE_STMT(Stmt);
-    Stmt->stmt = MADB_NewStmtHandle(Stmt);
-    if (Stmt->stmt == NULL) {
-        MADB_SetError(&Stmt->Error, MADB_ERR_HY001, "Reinit statement handle error.", 0);
+    if (Stmt->stmt->mysql->status != MYSQL_STATUS_GET_RESULT) {
+        SET_CLIENT_ERROR(Stmt->stmt->mysql, CR_COMMANDS_OUT_OF_SYNC, SQLSTATE_UNKNOWN, 0);
         return SQL_ERROR;
     }
 
-    Stmt->stmt->field_count = Stmt->Connection->mariadb->field_count;
+    if (Stmt->stmt->mysql->fields == NULL) {
+        return SQL_ERROR;
+    }
+
     stmt                    = Stmt->stmt;
-    stmt->field_count       = resultSet->field_count;
+    stmt->field_count       = stmt->mysql->field_count;
 
     /* 1. first build stmt->fields */
-    ret = store_statement_fields(stmt, resultSet);
+    ret = store_statement_fields(stmt, stmt->mysql->fields);
     if (ret != 0) {
         store_result_error_exit(stmt);
         MADB_SetError(&Stmt->Error, MADB_ERR_HY001, "Store statement result field error.", 0);
@@ -664,7 +771,7 @@ SQLRETURN MADB_StoreQueryResult(MADB_Stmt * Stmt, MYSQL_RES * resultSet) {
     }
 
     /* 2. convert result set to binary format and store in stmt->result */
-    ret = store_result_as_binary(stmt, resultSet);
+    ret = store_result_as_binary(stmt);
     if (ret != 0) {
         store_result_error_exit(stmt);
         MADB_SetError(&Stmt->Error, MADB_ERR_HY001, "Store result to binary format error.", 0);

@@ -24,7 +24,8 @@
 
 struct st_ma_stmt_methods MADB_StmtMethods; /* declared at the end of file */
 
-extern SQLRETURN MADB_StoreQueryResult(MADB_Stmt *Stmt, MYSQL_RES *resultSet);
+extern SQLRETURN MADB_StoreQueryResult(MADB_Stmt *Stmt);
+void MADB_StmtReset(MADB_Stmt *Stmt);
 
 /* {{{ MADB_StmtInit */
 SQLRETURN MADB_StmtInit(MADB_Dbc *Connection, SQLHANDLE *pHStmt)
@@ -87,28 +88,34 @@ error:
 }
 /* }}} */
 
+void ClearOldQueryData(MADB_Stmt * Stmt) {
+    /* clear data */
+    if (Stmt->stmt->result.data) {
+        ma_free_root(&Stmt->stmt->result.alloc, 0);
+        Stmt->stmt->result_cursor = Stmt->stmt->result.data = NULL;
+    }
+
+    Stmt->stmt->result.rows = 0;
+
+    return;
+}
+
 /* {{{ MADB_ExecuteQuery */
 SQLRETURN MADB_ExecuteQuery(MADB_Stmt * Stmt, char *StatementText, SQLINTEGER TextLength)
 {
   SQLRETURN ret= SQL_ERROR;
-  MYSQL_RES *resultSet = NULL;
   
   LOCK_MARIADB(Stmt->Connection);
   if (StatementText)
   {
     MDBUG_C_PRINT(Stmt->Connection, "mysql_real_query(%0x,%s,%lu)", Stmt->Connection->mariadb, StatementText, TextLength);
+    ClearOldQueryData(Stmt);
     if(!mysql_real_query(Stmt->Connection->mariadb, StatementText, TextLength))
     {
       ret= SQL_SUCCESS;
       MADB_CLEAR_ERROR(&Stmt->Error);
       if (Stmt->Connection->mariadb->field_count > 0) {
-        resultSet = mysql_store_result(Stmt->stmt->mysql);
-
-        if (resultSet != NULL) {
-            // MADB_SetError will be call to set error info in MADB_StoreQueryResult
-            ret = MADB_StoreQueryResult(Stmt, resultSet);
-            mysql_free_result(resultSet);
-        }
+        ret = MADB_StoreQueryResult(Stmt);
       }
 
       Stmt->AffectedRows= mysql_affected_rows(Stmt->Connection->mariadb);
@@ -342,8 +349,37 @@ SQLRETURN MADB_StmtExecDirect(MADB_Stmt *Stmt, char *StatementText, SQLINTEGER T
 {
   SQLRETURN ret;
   BOOL      ExecDirect= TRUE;
+  BOOL      NeedPrepare = FALSE;
 
-  ret= Stmt->Methods->Prepare(Stmt, StatementText, TextLength, ExecDirect);
+  NeedPrepare = Stmt->Connection->Dsn->BinaryExec;
+  if (!NeedPrepare) {
+    LOCK_MARIADB(Stmt->Connection);
+
+    MADB_StmtReset(Stmt);
+
+    /* After this point we can't have SQL_NTS*/
+    ADJUST_LENGTH(StatementText, TextLength);
+
+    /* There is no need to send anything to the server to find out there is syntax error here */
+    if (TextLength < MADB_MIN_QUERY_LEN) {
+        UNLOCK_MARIADB(Stmt->Connection);
+        return MADB_SetError(&Stmt->Error, MADB_ERR_42000, NULL, 0);
+    }
+    MADB_ResetParser(Stmt, StatementText, TextLength);
+    MADB_ParseQuery(&Stmt->Query);
+
+    NeedPrepare = Stmt->Query.HasParameters; //need to execute with prepare process in case of having input parameter
+
+    UNLOCK_MARIADB(Stmt->Connection);
+  }
+
+  if (NeedPrepare) {
+    ret= Stmt->Methods->Prepare(Stmt, StatementText, TextLength, ExecDirect);
+  } else {
+    Stmt->State = MADB_SS_EMULATED;
+    ret = SQL_SUCCESS;
+  }
+
   /* In case statement is not supported, we use mysql_query instead */
   if (!SQL_SUCCEEDED(ret))
   {

@@ -32,9 +32,9 @@ ODBC_TEST(tests_capabilitiesFromSQLGetFunctions)
      //support part feature, but set to unsupport
      is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLBULKOPERATIONS), SQL_FALSE);
      is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLSETCURSORNAME), SQL_FALSE);
-     is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLSETPOS), SQL_FALSE);
 
      //support function
+     is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLSETPOS), SQL_TRUE);
      is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLGETCONNECTATTR), SQL_TRUE);
      is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLGETCURSORNAME), SQL_TRUE);
      is_num(SQL_FUNC_EXISTS(funcs, SQL_API_SQLGETDATA), SQL_TRUE);
@@ -228,7 +228,8 @@ ODBC_TEST(tests_capabilitiesFromSQLGetInfo)
     unitBitmask4InfoValue = 1;
     CHECK_DBC_RC(Connection, SQLGetInfo(Connection, SQL_CONVERT_BIGINT, &unitBitmask4InfoValue,
                             sizeof(unitBitmask4InfoValue), &length));
-    is_num(unitBitmask4InfoValue, 0);
+    is_num(unitBitmask4InfoValue, SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_DOUBLE | SQL_CVT_REAL |
+                                  SQL_CVT_BIGINT | SQL_CVT_VARCHAR | SQL_CVT_TINYINT);
     IS(length == sizeof(SQLUINTEGER));
 
     unitBitmask4InfoValue = 1;
