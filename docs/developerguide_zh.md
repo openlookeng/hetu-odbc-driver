@@ -82,7 +82,12 @@
   ```
 
     注意: 1.构建中会下载二个依赖代码仓的代码，请确保下载通道可用，二个依赖仓的信息参看.gitmodules文件。
-         2.对-G参数，如使用Visual Studio 2017请使用“Visual Studio 15 2017"，更多选项请参看cmake手册。
+         2.如果要指定构建的版本，可以通过-D参数传入如下四个变量：
+    	MARIADB_ODBC_VERSION_MAJOR、MARIADB_ODBC_VERSION_MINOR、MARIADB_ODBC_VERSION_PATCH和GATEWAY_TAG。其中前三个MAJOR、MINOR、PATCH代表了版本号的三位，GATEWAY_TAG表示gateway代码的release tag
+    	例如，构建1.0.1版本：
+    	cmake -G "Visual Studio 16 2019" -A x64 -DMARIADB_ODBC_VERSION_MAJOR=1 -DMARIADB_ODBC_VERSION_MINOR=0 -DMARIADB_ODBC_VERSION_PATCH=1 -DGATEWAY_TAG="1.0.1" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONC_WITH_UNIT_TESTS=Off -DCONC_WITH_MSI=OFF -DWITH_SSL=SCHANNEL .
+    	cmake --build . --config RelWithDebInfo
+         3.对-G参数，如使用Visual Studio 2017请使用“Visual Studio 15 2017"，更多选项请参看cmake手册。
 
 ## 开发调测
 ###   程序启动和停止

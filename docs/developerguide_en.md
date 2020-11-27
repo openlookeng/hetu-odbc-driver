@@ -82,7 +82,12 @@ The following software has been installed:
   ```
 
     Note: 1. During the build, two pieces of code that depend on the code repository are downloaded. Ensure that the download channel is available. For details about the two pieces of code, see the .gitmodules file. 
-          2. For the -G parameter, if you use Visual Studio 2017, set to "Visual Studio 15 2017".For more options, see the CMake manual.
+          2. If the build version needs to be specified, you can pass in the following four variables through the -D parameter:
+    MARIADB_ODBC_VERSION_MAJOR, MARIADB_ODBC_VERSION_MINOR, MARIADB_ODBC_VERSION_PATCH and GATEWAY_TAG. The first three Variables MAJOR, MINOR, and PATCH represent the three digits of the version number, and GATEWAY_TAG represents the release tag of the gateway code.
+    	For example, to build version 1.0.1:
+    	cmake -G "Visual Studio 16 2019" -A x64 -DMARIADB_ODBC_VERSION_MAJOR=1 -DMARIADB_ODBC_VERSION_MINOR=0 -DMARIADB_ODBC_VERSION_PATCH=1 -DGATEWAY_TAG="1.0.1" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONC_WITH_UNIT_TESTS=Off -DCONC_WITH_MSI=OFF -DWITH_SSL=SCHANNEL .
+    	cmake --build . --config RelWithDebInfo
+          3. For the -G parameter, if you use Visual Studio 2017, set to "Visual Studio 15 2017".For more options, see the CMake manual.
 
 ## Development
 ### Program Starting and Stopping 
