@@ -95,7 +95,7 @@ ODBC驱动为应用提供了连接到数据库的能力，本产品为openLooKen
 
    完成第2页各输入框的填写并单击"Test DSN"按钮显示成功信息后，单击"Next"按钮
 
-5. 第3页Statement(s)输入框中可以输入在建立到openLooKeng服务器的连接后发送的初始语句，勾选Debug后驱动会在%TMP%路径下创建名为MAODBC.LOG的调试日志文件，记录openLooKeng ODBC Driver的调试信息，在第二页单击Test DSN成功后可以从CharacterSet下拉框中选择需要配置的连接字符集。最后在本页单击"Finishi"按钮完成DSN的配置与添加。
+5. 第3页Statement(s)输入框中可以输入在建立到openLooKeng服务器的连接后发送的初始语句，勾选“Debug“后驱动会在%TMP%路径下创建名为MAODBC.LOG的调试日志文件，记录openLooKeng ODBC Driver的调试信息，在第二页单击“Test DSN“成功后可以从“Character Set“下拉框中选择需要配置的连接字符集。勾选“Enable automatic reconnect“，在发送消息时如果连接已失效，将会自动与server重建连接(本功能无法对事务一致性提供保障，使用须谨慎)。最后在本页单击"Finish"按钮完成DSN的配置与添加。
 
 ### DSN配置ODBC连接
 

@@ -1584,6 +1584,35 @@ ODBC_TEST(test_send_long_data)
     return OK;
 }
 
+/* test COM_PING */
+ODBC_TEST(test_com_ping)
+{
+    SQLHANDLE   henv0 = NULL;
+    SQLHANDLE   hdbc0 = NULL;
+    SQLHANDLE   hstmt0 = NULL;
+    SQLINTEGER  state;
+    unsigned long options = 2 /*MADB_OPT_FLAG_FOUND_ROWS*/ | 4194304/*MADB_OPT_FLAG_AUTO_RECONNECT*/;
+
+    FAIL_IF(AllocEnvConn(&henv0, &hdbc0) != OK, "Alloc env and connection error.");
+    //specify connection option instead of default value in test framework
+    hstmt0 = DoConnect(hdbc0, FALSE, NULL, NULL, NULL, 0, NULL, &options, NULL, NULL);
+    FAIL_IF(hstmt0 == NULL, "Connect failed.");
+
+    //gateway/DBServer can be restart before this function call
+    CHECK_DBC_RC(hdbc0, SQLGetConnectAttr(hdbc0, SQL_ATTR_CONNECTION_DEAD, (SQLPOINTER)&state, 0, NULL));
+    is_num(state, SQL_CD_FALSE); // connect is active
+    
+    FAIL_IF(SQLDisconnect(hdbc0) != SQL_SUCCESS, "close db connection error.");
+
+    FAIL_IF(SQLGetConnectAttr(hdbc0, SQL_ATTR_CONNECTION_DEAD, (SQLPOINTER)&state, 0, NULL) == SQL_SUCCESS, "connection is closed, can not get attribute.");
+    
+    FAIL_IF(SQLFreeHandle(SQL_HANDLE_DBC, hdbc0) != SQL_SUCCESS, "free db connection error.");
+    
+    FAIL_IF(SQLFreeHandle(SQL_HANDLE_ENV, henv0) != SQL_SUCCESS, "free env error.");
+
+    return OK;
+}
+
 /*
     test cases for attributes of environment,connection and statements
      environment: odbc protocal version
@@ -1616,6 +1645,7 @@ MA_ODBC_TESTS my_tests[]=
     {test_com_close,                "test_com_close"},
     {test_statement_operate,        "test_statement_operate"},
     {test_send_long_data,           "test_send_long_data"},
+    {test_com_ping,                 "test_com_ping"},
     {NULL, NULL}
 };
 

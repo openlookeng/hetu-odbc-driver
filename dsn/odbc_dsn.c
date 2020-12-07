@@ -78,6 +78,7 @@ MADB_DsnMap DsnMap[] = {
   {&DsnKeys[8],  1, txtUserName,         64, 0},
   {&DsnKeys[9],  1, txtPassword,         64, 0},
   {&DsnKeys[10], 1, cbDatabase,           0, 0},
+  {&DsnKeys[14], 2, ckReconnect,           0, 0},
   {&DsnKeys[16], 2, cbCharset,           0, 0},
   {&DsnKeys[41], 1, cbSchema,            0, 0 },
   {&DsnKeys[42], 1, txtConnectCfg,       0, 0},
@@ -92,6 +93,7 @@ MADB_DsnMap DsnMap[] = {
 #define CBGROUP_RESETBIT(_Dsn, MapIdx)  *GET_FIELD_PTR(_Dsn, DsnMap[MapIdx].Key, char)&= ~CBGROUP_BIT(MapIdx)
 
 MADB_OptionsMap OptionsMap[]= {
+  {LASTPAGE, ckReconnect,              MADB_OPT_FLAG_AUTO_RECONNECT},
   {LASTPAGE, ckDebug,                  MADB_OPT_FLAG_DEBUG},
   /* last element */
   {0, 0, 0}
@@ -897,7 +899,6 @@ void CenterWindow(HWND hwndWindow)
                           nWidth, nHeight, TRUE);
   
 }
-
 
 BOOL DSNDialog(HWND     hwndParent,
                   WORD     fRequest,

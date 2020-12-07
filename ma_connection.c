@@ -18,6 +18,7 @@
    51 Franklin St., Fifth Floor, Boston, MA 02110, USA
 *************************************************************************************/
 #include <ma_odbc.h>
+#include <mysqld_error.h>
 
 struct st_madb_isolation MADB_IsolationLevel[] =
 {
@@ -321,9 +322,13 @@ SQLRETURN MADB_DbcGetAttr(MADB_Dbc *Dbc, SQLINTEGER Attribute, SQLPOINTER ValueP
     break;
   case SQL_ATTR_CONNECTION_DEAD:
     /* ping may fail if status isn't ready, so we need to check errors */
-    if (mysql_ping(Dbc->mariadb))
-      *(SQLUINTEGER *)ValuePtr= (mysql_errno(Dbc->mariadb) == CR_SERVER_GONE_ERROR ||
-                                 mysql_errno(Dbc->mariadb) == CR_SERVER_LOST) ? SQL_CD_TRUE : SQL_CD_FALSE;
+    if (mysql_ping(Dbc->mariadb)) {
+      unsigned int err_no = mysql_errno(Dbc->mariadb);
+      *(SQLUINTEGER *)ValuePtr= (err_no == CR_SERVER_GONE_ERROR ||
+                                 err_no == CR_SERVER_LOST ||
+                                 err_no == CR_CONNECTION_ERROR ||
+                                 err_no == ER_SERVER_SHUTDOWN) ? SQL_CD_TRUE : SQL_CD_FALSE;
+    }
     else
       *(SQLUINTEGER *)ValuePtr= SQL_CD_FALSE;
     break;

@@ -90,7 +90,7 @@ Before an application uses the openLooKeng ODBC driver, the data source DSN must
 
    Set the parameters on the second page, and then click **Test DSN**. After the system displays a message indicating that the operation is successful, click **Next**.
 
-5. In the **Statement(s)** text box on page 3, enter the initial statement sent after the connection to the openLooKeng server is established. After **Debug** is selected, the driver creates a debugging log file named **MAODBC.LOG** in **%TMP%** to record openLooKeng ODBC driver debugging information. After you click Test DSN on page 2, user can configure the connection character set from the CharacterSet drop-down box. Click **Finish**.
+5. In the **Statement(s)** text box on page 3, enter the initial statement sent after the connection to the openLooKeng server is established. After **Debug** is selected, the driver creates a debugging log file named **MAODBC.LOG** in **%TMP%** to record openLooKeng ODBC driver debugging information. After you click **Test DSN** on page 2, user can configure the connection character set from the **Character Set** drop-down box. Select **Enable automatic reconnect**, when the system is sending messages, it automatically reconnects with the server upon a connection failure. (The automatic reconnection function does not ensure transaction consistency. Exercise caution when enabling this function). Click **Finish**.
 
 ### Configuring the ODBC Connection for the DSN
 
