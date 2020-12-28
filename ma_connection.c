@@ -861,6 +861,12 @@ SQLRETURN MADB_DbcConnectDB(MADB_Dbc *Connection,
     mysql_options(Connection->mariadb, MYSQL_OPT_CONNECT_ATTR_ADD, "_server_connect_url", Dsn->ConnectUrl);
   }
 
+  /*Add DB server  connect passwd to the connection attributes*/
+  if (!MADB_IS_EMPTY(Dsn->Password))
+  {
+    mysql_options(Connection->mariadb, MYSQL_OPT_CONNECT_ATTR_ADD, "_server_connect_password", Dsn->Password);
+  }
+
   if (!mysql_real_connect(Connection->mariadb,
       Dsn->Socket ? "localhost" : Dsn->ServerName, Dsn->UserName, Dsn->Password,
         Dsn->Catalog && Dsn->Catalog[0] ? Dsn->Catalog : NULL, Dsn->Port, Dsn->Socket, client_flags))
